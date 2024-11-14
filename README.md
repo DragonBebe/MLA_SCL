@@ -23,7 +23,7 @@ This project is part of an Advanced Machine Learning (MLA), focused on reproduci
 
 ### 示例运行指令
 
-```bash
+```python
 python main.py --batch_size 8 --learning_rate 0.001 --epochs 5 --temp 0.1 --save_freq 3 --log_dir ./my_logs --model_save_dir ./my_checkpoints --gpu 0 --dataset ./data --dataset_name cifar10 --model_type resnet34 --loss_type supcon --augmentation basic
 
 以上命令将在 CIFAR-10 数据集上以 resnet34 模型进行训练，使用 SupConLoss_out 损失函数，训练 5 个 epoch，批量大小为 8，学习率为 0.001，且每隔 3 个 epoch 保存一次模型。

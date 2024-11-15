@@ -1,9 +1,0 @@
-Python version: 3.9.13 (tags/v3.9.13:6de2ca5, May 17 2022, 16:36:42) [MSC v.1929 64 bit (AMD64)]
-Torch version: 2.4.1+cu118
-Torchvision version: 0.19.1+cu118
-CUDA available: True
-CUDA version: 11.8
-Numpy version: 1.26.4
-Matplotlib version: 3.9.2
-Scipy version: 1.13.1
-Tensorboard version: 2.17.1

@@ -36,10 +36,10 @@ def set_loader(opt):
 
 def set_model(opt):
     model_dict = {
-        'resnet34': ResNet34(),
+        'ResNet34': ResNet34(),
         'ResNeXt101': ResNeXt101_32x8d(),
         'WideResNet': WideResNet_28_10(),
-        'resnet_HikVision': ResModel(),
+        'ResNet_HikVision': ResModel(),
     }
     model = model_dict.get(opt['model_type'])
     if model is None:

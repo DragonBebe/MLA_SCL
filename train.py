@@ -39,7 +39,7 @@ def set_model(opt):
         'ResNet34': ResNet34(),
         'ResNeXt101': ResNeXt101_32x8d(),
         'WideResNet': WideResNet_28_10(),
-        'ResNet_HikVision': ResModel(),
+        
     }
     model = model_dict.get(opt['model_type'])
     if model is None:

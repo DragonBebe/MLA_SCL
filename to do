@@ -1,4 +1,4 @@
-### 1.梯度爆炸！！检查代码，看是model的问题还是loss的问题，源代码的losses.py的最后一次更新提到他fix了loss=nan的问题，重点看！！！！！
+1.梯度爆炸！！检查代码，看是model的问题还是loss的问题，源代码的losses.py的最后一次更新提到他fix了loss=nan的问题，重点看！！！！！
 2.verify model 三个model
 3.verify loss
 先看supout

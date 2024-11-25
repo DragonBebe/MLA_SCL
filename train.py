@@ -7,7 +7,8 @@ import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 from losses.SupOut import SupConLoss_out
 
-from models import ResModel, ResNet34, ResNeXt101_32x8d, WideResNet_28_10, ResNet50, ResNet101, ResNet200, CSPDarknet53Classifier
+from models import ResModel, ResNet34, ResNeXt101_32x8d, WideResNet_28_10, ResNet50, ResNet101, ResNet200, \
+    CSPDarknet53Classifier
 
 from data_augmentation.data_augmentation_1 import TwoCropTransform, get_base_transform
 from torchvision import datasets
@@ -34,12 +35,13 @@ def set_loader(opt):
     train_loader = DataLoader(train_dataset, batch_size=opt['batch_size'], shuffle=True, num_workers=2)
     return train_loader
 
+
 def set_model(opt):
     model_dict = {
         'ResNet34': ResNet34(),
         'ResNeXt101': ResNeXt101_32x8d(),
         'WideResNet': WideResNet_28_10(),
-        
+
     }
     model = model_dict.get(opt['model_type'])
     if model is None:
@@ -49,7 +51,7 @@ def set_model(opt):
     model = model.to(device)
 
     # 根据 loss_type 参数选择损失函数
-    if opt['loss_type'] == 'supcon_in':
+    if opt['loss_type'] == 'supout':
         criterion = SupConLoss_out(temperature=opt['temp']).to(device)
     elif opt['loss_type'] == 'cross_entropy':
         criterion = nn.CrossEntropyLoss().to(device)
@@ -62,13 +64,14 @@ def set_model(opt):
 
     return model, criterion, device
 
+
 def adjust_learning_rate(optimizer, epoch, opt):
     if epoch in [4, 8, 12]:
         for param_group in optimizer.param_groups:
             param_group['lr'] *= 0.5
 
 
-def train(train_loader, model, criterion, optimizer, opt, writer, device):
+def train(train_loader, model, criterion, optimizer, opt, device):
     model.train()
     for epoch in range(1, opt['epochs'] + 1):
         adjust_learning_rate(optimizer, epoch, opt)

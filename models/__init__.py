@@ -1,5 +1,5 @@
 from .model_1 import ResModel
-from .model_2_resnet34 import ResNet34
+from .model_2_ResNet34 import ResNet34
 from .model_3_ResNeXt101_32x8d import ResNeXt101_32x8d
 from .model_4_WideResNet_28_10 import WideResNet_28_10
 from .model_5_ResNet50 import ResNet50

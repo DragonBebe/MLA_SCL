@@ -1,0 +1,2 @@
+1.梯度爆炸！！检查代码，看是model的问题还是loss的问题
+2.verify model 三个model

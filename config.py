@@ -44,6 +44,13 @@ def parse_option():
 
     args = parser.parse_args()
 
+    # 动态设置分类数量
+    if args.dataset_name == 'cifar10':
+        args.num_classes = 10
+    elif args.dataset_name == 'cifar100':
+        args.num_classes = 100
+    else:
+        raise ValueError(f"Unsupported dataset: {args.dataset_name}")
 
     # 直接将 argparse 的解析结果转换为字典形式
     opt = vars(args)

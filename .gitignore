@@ -7,3 +7,8 @@ my_checkpoints/
 .idea/
 __pycache__/
 data/
+my_logs/
+my_checkpoints/
+.idea/
+__pycache__/
+data/

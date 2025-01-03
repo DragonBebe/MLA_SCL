@@ -14,6 +14,8 @@ from torch.utils.tensorboard import SummaryWriter # 用于加载tensorboard
 import re
 import subprocess  # 用于调用外部脚本 可以每x个eporch调用一次test
 import time  # 引入 time 模块
+import numpy as np
+from data_augmentation import cutmix_data, cutmix_criterion, mixup_data, mixup_criterion
 
 def ensure_dir_exists(path):
     if not os.path.exists(path):
@@ -63,6 +65,19 @@ def train_from_scratch(train_loader, val_loader, model, optimizer, scheduler, cr
             train_bar = tqdm(train_loader, desc="Training", leave=False)
             for inputs, labels in train_bar:
                 inputs, labels = inputs.to(device), labels.to(device)
+
+                # 随机选择是否应用 MixUp 或 CutMix
+                if np.random.rand() < 0.0:  # 50% 概率应用 CutMix
+                    inputs, labels_a, labels_b, lam = cutmix_data(inputs, labels, alpha=1.0)
+                    outputs = model(inputs)
+                    loss = cutmix_criterion(criterion, outputs, labels_a, labels_b, lam)
+                elif np.random.rand() < 0.0:  # 50% 概率应用 MixUp
+                    inputs, labels_a, labels_b, lam = mixup_data(inputs, labels, alpha=0.2)
+                    outputs = model(inputs)
+                    loss = mixup_criterion(criterion, outputs, labels_a, labels_b, lam)
+                else:  # 不应用增强方法
+                    outputs = model(inputs)
+                    loss = criterion(outputs, labels)
 
                 outputs = model(inputs)
                 loss = criterion(outputs, labels)
@@ -271,4 +286,5 @@ def main():
 if __name__ == "__main__":
     main()
 
-# python train_scratch_classifier.py --model_type ResNet34 --batch_size 32 --epochs 100 --learning_rate 0.005 --dataset_name cifar10
+# python train_scratch_classifier.py --model_type ResNet34 --batch_size 32 --epochs 20 --learning_rate 0.005 --dataset_name cifar10
+

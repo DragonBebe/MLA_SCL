@@ -73,7 +73,6 @@ Supervised-Contrastive-Learning/
 ├── train_scratch_classifier.py     # Training classifiers from scratch
 ├── test_pretrained_classifier.py   # Evaluating pretrained models
 ├── test_scratch_classifier.py      # Evaluating classifiers trained from scratch
-├── utils.py                        # Utility functions (e.g., data loaders, loggers)
 └── environment.yml                 # Python dependencies for setting up the environment
 ```
 ## Training and Evaluation

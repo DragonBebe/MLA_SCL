@@ -125,8 +125,6 @@ For comparison, the `train_scratch_classifier.py` script trains a classifier fro
 
 During training, the scripts automatically save the model weights with the best performance (e.g., highest accuracy). These saved weights can be used for further evaluations or deployment.
 
----
-
 By structuring the training process this way, the project ensures:
 1. Efficient feature extraction through pretraining.
 2. Robust evaluation of the performance benefits of supervised contrastive learning.
@@ -141,7 +139,7 @@ By structuring the training process this way, the project ensures:
 For any inquiries, feel free to reach out:
 
 **Zhuoxuan Cao**  
-Email: [Zhuoxuan.Cao@etu.sorbonne-universite.fr](mailto:Zhuoxuan.Cao@etu.sorbonne-universite.fr)
+Email: [caozhuoxuan@gmail.com](mailto:caozhuoxuan@gmail.com)
 
 
   

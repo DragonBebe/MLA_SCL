@@ -36,7 +36,7 @@ cd MLA_SCL
     ```bash
     conda activate SCL
     ```
-
+---
 ## Code Architecture
 
 The project structure is organized as follows:
@@ -77,6 +77,7 @@ Supervised-Contrastive-Learning/
 ├── test_scratch_classifier.py      # Evaluating classifiers trained from scratch
 └── environment.yml                 # Python dependencies for setting up the environment
 ```
+---
 ## Training and Evaluation
 
 ### Pretraining with Supervised Contrastive Loss
@@ -97,6 +98,7 @@ To train a classifier from scratch without pretraining, use the following comman
 ```bash
 python train_scratch_classifier.py --model_type ResNet34 --batch_size 32 --epochs 3 --learning_rate 0.1 --dataset_name cifar10 --dataset ./data --save_dir ./saved_models/classification/scratch --gpu 0
 ```
+---
 ## Training Workflow
 
 In this project, **Supervised Contrastive Learning** is implemented as a pretraining strategy that effectively clusters data representations before classification. The training process is divided into three distinct phases:
@@ -127,10 +129,11 @@ By structuring the training process this way, the project ensures:
 1. Efficient feature extraction through pretraining.
 2. Robust evaluation of the performance benefits of supervised contrastive learning.
 3. Direct comparison between pretrained and non-pretrained approaches.
-
+---
 ## Results
 之后补充
 
+---
 ## Contact
 
 For any inquiries, feel free to reach out:

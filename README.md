@@ -52,6 +52,7 @@ Supervised-Contrastive-Learning/
 ├── data_augmentation/
 │   ├── __init__.py                 # Marks the directory as a Python package
 │   ├── CutMix.py                   # Implementation of CutMix augmentation
+|   ├── CutOut.py                   # Implementation of CutOut augmentation
 │   ├── MixUp.py                    # Implementation of MixUp augmentation
 │   ├── data_augmentation_con.py    # Augmentation pipeline for contrastive learning
 ├── losses/

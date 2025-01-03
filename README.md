@@ -1,4 +1,47 @@
+# Supervised Contrastive Learning (SCL)
 
+This repository provides a reproduction and implementation of the **Supervised Contrastive Learning** framework, as introduced in the [original paper](https://arxiv.org/abs/2004.11362). The project focuses on training neural networks with supervised contrastive loss and evaluating their performance on benchmark datasets.
+
+---
+
+## Features
+
+- Implementation of **Supervised Contrastive Loss** (`supin` and `supout` variations).
+- Support for multiple ResNet backbones: **ResNet-34**, **ResNet-50**, **ResNet-101**, and **ResNet-200**.
+- Pretraining with supervised contrastive loss for improved feature representation.
+- Fine-tuning and training classifiers from scratch for comparative evaluations.
+- Data augmentation strategies including **CutMix**, **MixUp**, and **AutoAugment**.
+- Configurable training settings to adapt to different tasks and datasets.
+
+---
+
+## Installation
+
+### Clone the Repository
+
+```bash
+git clone https://github.com/DragonBebe/MLA_SCL.git
+cd MLA_SCL
+```
+## Set Up the Environment
+
+1. Create the conda environment using the provided `environment.yml` file:
+
+    ```bash
+    conda env create --file environment.yml
+    ```
+
+2. Activate the created environment:
+
+    ```bash
+    conda activate SCL
+    ```
+
+## Code Architecture
+
+The project structure is organized as follows:
+
+```plaintext
 Supervised-Contrastive-Learning/
 ├── Contrastive_Learning/
 │   ├── __init__.py                 # Marks the directory as a Python package
@@ -32,7 +75,17 @@ Supervised-Contrastive-Learning/
 ├── test_scratch_classifier.py      # Evaluating classifiers trained from scratch
 ├── utils.py                        # Utility functions (e.g., data loaders, loggers)
 └── environment.yml                 # Python dependencies for setting up the environment
+```
+## Training and Evaluation
 
+### Pretraining with Supervised Contrastive Loss
+
+To pretrain the model using supervised contrastive loss, use the following command:
+
+```bash
+python main_con.py --batch_size 32 --learning_rate 0.01 --epochs 2 --temp 0.1 --log_dir ./my_logs --model_save_dir ./saved_models/pretraining --gpu 0 --dataset ./data --dataset_name cifar10 --model_type ResNet34 --loss_type supout --input_resolution 32 --feature_dim 128 --num_workers 2
+```
+### Fine-tuning Pretrained Models
 
 
 

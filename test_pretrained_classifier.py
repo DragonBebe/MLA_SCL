@@ -141,4 +141,4 @@ if __name__ == "__main__":
 
 
     # 指令示例
-    #python test_pretrained_classifier_top1_5.py --model ResNet34 --data Cifar10 --modir ./saved_models/classification/pretrained/ResNet34_cifar10_batch256_valAcc65.51_20250102-230510.pth
+    #python test_pretrained_classifier.py --model ResNet34 --data Cifar10 --modir ./saved_models/classification/pretrained/ResNet34_cifar10_batch256_valAcc65.51_20250102-230510.pth

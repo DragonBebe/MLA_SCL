@@ -236,4 +236,3 @@ if __name__ == "__main__":
     main()
 
 # python train_scratch_classifier.py --model_type ResNet34 --batch_size 16 --epochs 20 --learning_rate 0.005 --dataset_name cifar10
-

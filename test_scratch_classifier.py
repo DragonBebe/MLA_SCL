@@ -106,6 +106,6 @@ if __name__ == "__main__":
     main()
 
     # 指令示例
-    #python test_scratch_classifier_top1_5.py --model ResNet34 --data Cifar10 --modir ./saved_models/classification/scratch/ResNet34_cifar10_batch256_valAcc85.96_20250103-012057.pth
+    #python test_scratch_classifier.py --model ResNet34 --data Cifar10 --modir ./saved_models/classification/scratch/ResNet34_cifar10_batch256_valAcc85.96_20250103-012057.pth
 
 

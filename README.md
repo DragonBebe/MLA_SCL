@@ -2,6 +2,8 @@
 
 This repository provides a reproduction and implementation of the **Supervised Contrastive Learning** framework, as introduced in the [original paper](https://arxiv.org/abs/2004.11362). The project focuses on training neural networks with supervised contrastive loss and evaluating their performance on benchmark datasets.
 
+![image](https://github.com/DragonBebe/MLA_SCL/blob/main/image/scl.png)
+
 ---
 
 ## Features

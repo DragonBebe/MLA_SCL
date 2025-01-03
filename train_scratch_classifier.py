@@ -1,17 +1,16 @@
 import argparse
 import torch
 import torch.nn as nn
-import numpy as np
 from tqdm import tqdm  # 用于显示进度条
 import torch.optim as optim
 from torch.utils.data import DataLoader, random_split
 from torchvision import datasets, transforms
 from torchvision.transforms import AutoAugment, AutoAugmentPolicy
 from models import ResNet34, ResNet50, ResNet101, ResNet200
-from data_augmentation import cutmix_data, cutmix_criterion, mixup_data, mixup_criterion
 import os
 import datetime
 
+from torch.utils.tensorboard import SummaryWriter # 用于加载tensorboard
 
 def ensure_dir_exists(path):
     if not os.path.exists(path):
@@ -39,6 +38,10 @@ def train_from_scratch(train_loader, val_loader, model, optimizer, scheduler, cr
     last_save_path = None
     ensure_dir_exists(save_dir)
 
+    # 初始化 TensorBoard
+    log_dir = os.path.join(save_dir, "tensorboard_logs")
+    writer = SummaryWriter(log_dir=log_dir)
+
     try:
         for epoch in range(epochs):
             print(f"Epoch [{epoch + 1}/{epochs}]")
@@ -55,19 +58,8 @@ def train_from_scratch(train_loader, val_loader, model, optimizer, scheduler, cr
             for inputs, labels in train_bar:
                 inputs, labels = inputs.to(device), labels.to(device)
 
-                # 随机选择数据增强策略
-                rand_prob = np.random.rand()
-                if rand_prob < 0.2:  # 20% 概率使用 CutMix
-                    inputs, labels_a, labels_b, lam = cutmix_data(inputs, labels, alpha=1.0)
-                    outputs = model(inputs)
-                    loss = cutmix_criterion(criterion, outputs, labels_a, labels_b, lam)
-                elif rand_prob < 0.4:  # 20% 概率使用 MixUp
-                    inputs, labels_a, labels_b, lam = mixup_data(inputs, labels, alpha=0.2)
-                    outputs = model(inputs)
-                    loss = mixup_criterion(criterion, outputs, labels_a, labels_b, lam)
-                else:  # 剩余 60% 使用原始数据
-                    outputs = model(inputs)
-                    loss = criterion(outputs, labels)
+                outputs = model(inputs)
+                loss = criterion(outputs, labels)
 
                 optimizer.zero_grad()
                 loss.backward()
@@ -92,6 +84,11 @@ def train_from_scratch(train_loader, val_loader, model, optimizer, scheduler, cr
             print(
                 f"  Batch Accuracy: min={min(batch_accuracies) * 100:.2f}%, max={max(batch_accuracies) * 100:.2f}%, mean={epoch_accuracy * 100:.2f}%")
 
+
+            # 记录训练损失和准确率到 TensorBoard
+            writer.add_scalar("Train/Loss", epoch_loss, epoch)
+            writer.add_scalar("Train/Accuracy", epoch_accuracy * 100, epoch)
+
             # Validation loop
             model.eval()
             val_correct = 0
@@ -113,6 +110,10 @@ def train_from_scratch(train_loader, val_loader, model, optimizer, scheduler, cr
             val_accuracy = val_correct / val_total
             print(f"Validation Loss: {val_loss:.4f}, Validation Accuracy: {val_accuracy * 100:.2f}%")
 
+            # 记录验证损失和准确率到 TensorBoard
+            writer.add_scalar("Validation/Loss", val_loss, epoch)
+            writer.add_scalar("Validation/Accuracy", val_accuracy * 100, epoch)
+
             # Save the best model
             if val_accuracy > best_accuracy:
                 best_accuracy = val_accuracy
@@ -128,7 +129,8 @@ def train_from_scratch(train_loader, val_loader, model, optimizer, scheduler, cr
     except Exception as e:
         print(f"Error during training: {e}")
         raise
-
+    finally:
+        writer.close()
 
 def main():
     parser = argparse.ArgumentParser(description="Train a ResNet model from scratch for classification")
@@ -145,6 +147,9 @@ def main():
 
     device = torch.device(f"cuda:{args.gpu}" if torch.cuda.is_available() else "cpu")
 
+    # 关闭tensorflow的oneDNN 优化，从而减少可能的冲突
+    os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
+
     # Dataset loading
     if args.dataset_name == "cifar10":
         transform = transforms.Compose([
@@ -152,7 +157,7 @@ def main():
             # transforms.RandomHorizontalFlip(),
             AutoAugment(AutoAugmentPolicy.CIFAR10),
             transforms.ToTensor(),
-            transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
         ])
         dataset = datasets.CIFAR10(root=args.dataset, train=True, download=True, transform=transform)
         num_classes = 10
@@ -160,13 +165,8 @@ def main():
         transform = transforms.Compose([
             transforms.RandomResizedCrop(32),
             transforms.RandomHorizontalFlip(),
-            AutoAugment(AutoAugmentPolicy.CIFAR10),
-            # Cutout(n_holes=1, length=16),  # 添加 CutOut
-            # transforms.RandomHorizontalFlip(),
-            # transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4, hue=0.1),
-            # transforms.RandomRotation(5),
             transforms.ToTensor(),
-            transforms.Normalize((0.5071, 0.4867, 0.4408), (0.2675, 0.2565, 0.2761)),  # CIFAR-100 标准化
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
         ])
         dataset = datasets.CIFAR100(root=args.dataset, train=True, download=True, transform=transform)
         num_classes = 100
@@ -213,18 +213,12 @@ def main():
         lr=args.learning_rate,  # 学习率，与 SGD 的默认值可能不同，建议适当减小
         betas=(0.9, 0.999),  # 默认 AdamW 参数
         eps=1e-8,  # 防止数值不稳定
-        weight_decay=1e-4  # 权重衰减
+        weight_decay=5e-4  # 权重衰减
     )
-
-    # scheduler = optim.lr_scheduler.CosineAnnealingLR(
-    #     optimizer,
-    #     T_max=args.epochs  # Cosine退火周期与总训练 epoch 对应
-    # )
 
     scheduler = optim.lr_scheduler.CosineAnnealingLR(
         optimizer,
-        T_max=10,  # 每 10 个 epoch 一个完整的余弦周期
-        eta_min=1e-5  # 最小学习率
+        T_max=args.epochs  # Cosine退火周期与总训练 epoch 对应
     )
 
 
@@ -240,3 +234,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# python train_scratch_classifier.py --model_type ResNet34 --batch_size 16 --epochs 20 --learning_rate 0.005 --dataset_name cifar10
+

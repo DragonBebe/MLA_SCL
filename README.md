@@ -1,4 +1,46 @@
 
+Supervised-Contrastive-Learning/
+├── Contrastive_Learning/
+│   ├── __init__.py                 # Marks the directory as a Python package
+│   ├── config_con.py               # Configuration file for supervised contrastive learning
+│   ├── train_con.py                # Main training script for contrastive learning
+├── data_augmentation/
+│   ├── __init__.py                 # Marks the directory as a Python package
+│   ├── CutMix.py                   # Implementation of CutMix augmentation
+│   ├── MixUp.py                    # Implementation of MixUp augmentation
+│   ├── data_augmentation_con.py    # Augmentation pipeline for contrastive learning
+├── losses/
+│   ├── __init__.py                 # Marks the directory as a Python package
+│   ├── SupIn.py                    # Implementation of SupIn loss
+│   ├── SupOut.py                   # Implementation of SupOut loss
+│   ├── CrossEntropy.py             # Implementation of CrossEntropy loss
+├── models/
+│   ├── __init__.py                 # Marks the directory as a Python package
+│   ├── ResNet34.py                 # Implementation of ResNet-34 backbone
+│   ├── ResNet50.py                 # Implementation of ResNet-50 backbone
+│   ├── SupConResNet.py             # Implementation of the projection head
+├── saved_models/                   # Directory for saving pretrained models and weights
+│   ├── classification/             # Contains weights for classification tasks
+│   │   ├── pretrain/               # Pretrained classification models
+│   │   └── scratch/                # Models trained from scratch
+│   ├── pretraining/                # Pretrained weights for contrastive learning
+├── my_logs/                        # Stores training logs
+├── main_con.py                     # Entry point for contrastive learning pretraining
+├── train_pretrained_classifier.py  # Fine-tuning pretrained models
+├── train_scratch_classifier.py     # Training classifiers from scratch
+├── test_pretrained_classifier.py   # Evaluating pretrained models
+├── test_scratch_classifier.py      # Evaluating classifiers trained from scratch
+├── utils.py                        # Utility functions (e.g., data loaders, loggers)
+└── environment.yml                 # Python dependencies for setting up the environment
+
+
+
+
+
+
+
+
+
 ## 1 代码结构
 - Contrastive_Learning/：包含与对比学习相关的代码。
    - init.py：该文件是简单的初始化文件，将 Contrastive_Learning 文件夹标记为一个 Python 包。通过该文件，项目中其他模块可以导入 Contrastive_Learning 文件夹中的函数、类或配置。

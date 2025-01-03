@@ -5,7 +5,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch.optim.lr_scheduler import LambdaLR
 
-from losses import SupConLoss_in, SupConLoss_out, CrossEntropyLoss
+from losses import SupConLoss_in, SupConLoss_out
 from models import ResNet34, ResNet50, ResNet101, ResNet200, CSPDarknet53, SupConResNetFactory, SupConResNetFactory_CSPDarknet53
 from data_augmentation import TwoCropTransform, get_base_transform
 from torchvision import datasets
@@ -66,24 +66,6 @@ class LARS(Optimizer):
                 p.add_(grad, alpha=-group['lr'] * adaptive_lr)
 
         return loss
-
-
-# # 数据加载器
-# def set_loader(opt):
-#     transform = TwoCropTransform(get_base_transform(opt['input_resolution']))
-#     if opt['dataset_name'] == 'cifar10':
-#         train_dataset = datasets.CIFAR10(root=opt['dataset'], train=True, download=True, transform=transform)
-#     elif opt['dataset_name'] == 'cifar100':
-#         train_dataset = datasets.CIFAR100(root=opt['dataset'], train=True, download=True, transform=transform)
-#     elif opt['dataset_name'] == 'imagenet':
-#         train_dataset = datasets.ImageFolder(root=opt['dataset'], transform=transform)
-#     else:
-#         raise ValueError(f"Unknown dataset: {opt['dataset_name']}")
-
-#     train_loader = DataLoader(train_dataset, batch_size=opt['batch_size'], shuffle=True, num_workers=2,
-#                               pin_memory=False,
-#                               persistent_workers=opt['num_workers'] > 0)
-#     return train_loader
 
 # 动态标准化参数和数据增强
 def set_loader(opt):
@@ -240,48 +222,6 @@ def save_best_model(model, opt, epoch, loss, save_root, best_loss, last_save_pat
         return best_loss, last_save_path
 
 
-
-# def train(train_loader, model, criterion, optimizer, opt, device, epoch=None):
-#     """
-#     对比学习预训练的训练函数
-#     """
-#     model.train()
-#     running_loss = 0.0
-#     total_steps = len(train_loader)
-#
-#     train_bar = tqdm(enumerate(train_loader), total=total_steps, desc="Training", leave=False)
-#     for step, (inputs, labels) in train_bar:
-#         if isinstance(inputs, list) and len(inputs) == 2:
-#             inputs = torch.cat([inputs[0], inputs[1]], dim=0).to(device)
-#         else:
-#             inputs = inputs.to(device)
-#         labels = labels.to(device)
-#
-#         optimizer.zero_grad()
-#         features = model(inputs)
-#
-#         f1, f2 = torch.split(features, features.size(0) // 2, dim=0)
-#         contrastive_features = torch.stack([f1, f2], dim=1)
-#
-#         if contrastive_features.size(0) != labels.size(0):
-#             labels = labels[:contrastive_features.size(0)]
-#
-#         loss = criterion(contrastive_features, labels)
-#         loss.backward()
-#         optimizer.step()
-#
-#         running_loss += loss.item()
-#         train_bar.set_postfix(loss=loss.item())
-#
-#     epoch_loss = running_loss / len(train_loader)
-#     print(f"--- Summary for Epoch [{epoch + 1}] ---")
-#     print(f"    Average Loss: {epoch_loss:.4f}")
-#
-#     if epoch is not None and epoch % 5 == 0:
-#         save_model(model, opt, epoch, epoch_loss, "./saved_models/pretraining")
-#
-#     return epoch_loss
-
 def train(train_loader, model, criterion, optimizer, opt, device, epoch=None):
     """
     对比学习预训练的训练函数。
@@ -324,11 +264,6 @@ def train(train_loader, model, criterion, optimizer, opt, device, epoch=None):
     epoch_loss = running_loss / len(train_loader)  # 计算平均损失
     print(f"--- Summary for Epoch [{epoch + 1}] ---")
     print(f"    Average Loss: {epoch_loss:.4f}")
-
-    # # 保存性能最佳的模型并删除旧模型
-    # save_root = "./saved_models/pretraining"
-    # best_loss, last_save_path = save_best_model(model, opt, epoch, epoch_loss, save_root, best_loss, last_save_path)
-
 
     # 更新 opt 中的状态
     opt["best_loss"] = best_loss

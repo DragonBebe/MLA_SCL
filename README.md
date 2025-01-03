@@ -61,9 +61,9 @@ Supervised-Contrastive-Learning/
 │   ├── __init__.py                 # Marks the directory as a Python package
 │   ├── ResNet34.py                 # Implementation of ResNet-34 backbone
 │   ├── ResNet50.py                 # Implementation of ResNet-50 backbone
-│   ├── ResNet101.py                 # Implementation of ResNet-101 backbone
-│   ├── ResNet200.py                 # Implementation of ResNet-200 backbone
-│   ├── Projectionhead.py             # Implementation of the projection head
+│   ├── ResNet101.py                # Implementation of ResNet-101 backbone
+│   ├── ResNet200.py                # Implementation of ResNet-200 backbone
+│   ├── Projectionhead.py           # Implementation of the projection head
 ├── saved_models/                   # Directory for saving pretrained models and weights
 │   ├── classification/             # Contains weights for classification tasks
 │   │   ├── pretrain/               # Pretrained classification models
@@ -97,13 +97,47 @@ To train a classifier from scratch without pretraining, use the following comman
 ```bash
 python train_scratch_classifier.py --model_type ResNet34 --batch_size 32 --epochs 3 --learning_rate 0.1 --dataset_name cifar10 --dataset ./data --save_dir ./saved_models/classification/scratch --gpu 0
 ```
+## Training Workflow
+
+In this project, **Supervised Contrastive Learning** is implemented as a pretraining strategy that effectively clusters data representations before classification. The training process is divided into three distinct phases:
+
+### 1. Pretraining with Supervised Contrastive Loss
+
+The first step is to pretrain the model using supervised contrastive loss. This step clusters the feature representations, preparing them for downstream classification tasks. Use the `main_con.py` script to perform this pretraining step. The pretrained weights will be saved automatically.
+
+### 2. Linear Classification Training
+
+After pretraining, the next step is to fine-tune the pretrained weights for linear classification. Use the `train_pretrained_classifier.py` script to load the pretrained weights and perform the classification task. 
+
+**Important Notes:**
+- Both training steps must use the same backbone network (e.g., ResNet-34) and dataset (e.g., CIFAR-10) for consistency.
+- Ensure that the correct pretrained weights are loaded during the fine-tuning step.
+
+### 3. Training Classifiers from Scratch
+
+For comparison, the `train_scratch_classifier.py` script trains a classifier from scratch on the dataset without any pretraining. This serves as a baseline to evaluate the performance improvement introduced by the supervised contrastive learning strategy.
+
+### Model Saving
+
+During training, the scripts automatically save the model weights with the best performance (e.g., highest accuracy). These saved weights can be used for further evaluations or deployment.
+
+---
+
+By structuring the training process this way, the project ensures:
+1. Efficient feature extraction through pretraining.
+2. Robust evaluation of the performance benefits of supervised contrastive learning.
+3. Direct comparison between pretrained and non-pretrained approaches.
+
 ## Results
 之后补充
 
 ## Contact
+
 For any inquiries, feel free to reach out:
-Zhuoxuan Cao
-Email: Zhuoxuan.Cao@etu.sorbonne-universite.fr
+
+**Zhuoxuan Cao**  
+Email: [Zhuoxuan.Cao@etu.sorbonne-universite.fr](mailto:Zhuoxuan.Cao@etu.sorbonne-universite.fr)
+
 ## 1 代码结构
 - Contrastive_Learning/：包含与对比学习相关的代码。
    - init.py：该文件是简单的初始化文件，将 Contrastive_Learning 文件夹标记为一个 Python 包。通过该文件，项目中其他模块可以导入 Contrastive_Learning 文件夹中的函数、类或配置。

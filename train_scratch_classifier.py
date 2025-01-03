@@ -1,110 +1,238 @@
+import argparse
 import torch
 import torch.nn as nn
+from tqdm import tqdm  # 用于显示进度条
+import torch.optim as optim
+from torch.utils.data import DataLoader, random_split
 from torchvision import datasets, transforms
-from torch.utils.data import DataLoader
-from models import ResNet34, ResNet50,ResNet101 # 确保路径正确
-import argparse
+from torchvision.transforms import AutoAugment, AutoAugmentPolicy
+from models import ResNet34, ResNet50, ResNet101, ResNet200
+import os
+import datetime
 
-def load_test_data(batch_size=32,data_type = "Cifar10"):
-    transform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))  # 标准化
-    ])
-    # 根据 data_type 动态选择test_set
-    if data_type == "Cifar10":
-        testset = datasets.CIFAR10(root="./data", train=False, download=True, transform=transform)
-    elif data_type == "Cifar100":
-        testset = datasets.CIFAR100(root="./data", train=False, download=True, transform=transform)
+from torch.utils.tensorboard import SummaryWriter # 用于加载tensorboard
+
+def ensure_dir_exists(path):
+    if not os.path.exists(path):
+        os.makedirs(path)
+        print(f"Created directory: {path}")
+
+
+def save_best_model(model, save_path, last_save_path):
+    if save_path == last_save_path:
+        print(f"Saving new model to {save_path}, skipping deletion of identical path.")
     else:
-        raise ValueError(f"Unsupported data type: {data_type}. Choose from Cifar10, Cifar100.")
+        if last_save_path and os.path.exists(last_save_path):
+            os.remove(last_save_path)
+            print(f"Deleted previous model: {last_save_path}")
 
-    # testset = datasets.CIFAR10(root="./data", train=False, download=True, transform=transform)
-
-    testloader = DataLoader(testset, batch_size=batch_size, shuffle=False, num_workers=4)
-    return testloader
-
-
-def compute_top_k_accuracy(output, target, k=5):
-    with torch.no_grad():
-        max_k_preds = torch.topk(output, k, dim=1).indices  # 获取前 k 的预测索引
-        correct = max_k_preds.eq(target.view(-1, 1).expand_as(max_k_preds))  # 检查是否包含正确标签
-        return correct.any(dim=1).float().sum().item()  # 转换为布尔值后求和
+    torch.save(model.state_dict(), save_path)
+    print(f"New best model saved to {save_path}")
+    return save_path
 
 
-def test_model(model_path, device,model_type,data_type):
+def train_from_scratch(train_loader, val_loader, model, optimizer, scheduler, criterion, device, dataset_name, epochs=10,
+                       save_dir="./saved_models", model_type="ResNet50", batch_size=64):
+    model.train()
+    best_accuracy = 0.0
+    last_save_path = None
+    ensure_dir_exists(save_dir)
 
-    # 根据 data_type 动态选择类别数量
-    if data_type == "Cifar10":
-        num_classes = 10
-    elif data_type == "Cifar100":
-        num_classes = 100
-    else:
-        raise ValueError(f"Unsupported data type: {data_type}. Choose from Cifar10, Cifar100.")
+    # 初始化 TensorBoard
+    log_dir = os.path.join(save_dir, "tensorboard_logs")
+    writer = SummaryWriter(log_dir=log_dir)
 
-    # 根据 model_type 动态选择模型
-    if model_type == "ResNet34":
-        model = ResNet34(num_classes=num_classes).to(device)
-    elif model_type == "ResNet50":
-        model = ResNet50(num_classes=num_classes).to(device)
-    elif model_type == "ResNet101":
-        model = ResNet101(num_classes=num_classes).to(device)
-    else:
-        raise ValueError(f"Unsupported model type: {model_type}. Choose from ResNet34, ResNet50, ResNet101.")
-    model.load_state_dict(torch.load(model_path, map_location=device))
-    model.eval()
+    try:
+        for epoch in range(epochs):
+            print(f"Epoch [{epoch + 1}/{epochs}]")
 
-    testloader = load_test_data(data_type=data_type)
+            # Training loop
+            running_loss = 0.0
+            correct = 0
+            total = 0
+            batch_losses = []  # 保存每个 batch 的损失
+            batch_accuracies = []  # 保存每个 batch 的准确率
 
-    correct_top1 = 0
-    correct_top5 = 0
-    total = 0
-    criterion = nn.CrossEntropyLoss()
-    running_loss = 0.0
+            model.train()
+            train_bar = tqdm(train_loader, desc="Training", leave=False)
+            for inputs, labels in train_bar:
+                inputs, labels = inputs.to(device), labels.to(device)
 
-    with torch.no_grad():
-        for inputs, labels in testloader:
-            inputs, labels = inputs.to(device), labels.to(device)
+                outputs = model(inputs)
+                loss = criterion(outputs, labels)
 
-            outputs = model(inputs)
-            loss = criterion(outputs, labels)
-            running_loss += loss.item()
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
 
-            # Top-1 准确率
-            _, predicted = torch.max(outputs, 1)
-            correct_top1 += (predicted == labels).sum().item()
+                _, predicted = outputs.max(1)
+                correct += (predicted == labels).sum().item()
+                total += labels.size(0)
+                running_loss += loss.item()
 
-            # Top-5 准确率
-            correct_top5 += compute_top_k_accuracy(outputs, labels, k=5)
+                # 记录 batch 的损失和准确率
+                batch_losses.append(loss.item())
+                batch_accuracies.append((predicted == labels).float().mean().item())
 
-            total += labels.size(0)
+                # 更新进度条
+                train_bar.set_postfix(loss=loss.item(), acc=batch_accuracies[-1] * 100)
 
-    accuracy_top1 = 100 * correct_top1 / total
-    accuracy_top5 = 100 * correct_top5 / total
-    avg_loss = running_loss / len(testloader)
+            epoch_loss = running_loss / len(train_loader)
+            epoch_accuracy = correct / total
+            print(f"Epoch [{epoch + 1}/{epochs}], Loss: {epoch_loss:.4f}, Train Accuracy: {epoch_accuracy * 100:.2f}%")
+            print(f"  Batch Loss: min={min(batch_losses):.4f}, max={max(batch_losses):.4f}, mean={epoch_loss:.4f}")
+            print(
+                f"  Batch Accuracy: min={min(batch_accuracies) * 100:.2f}%, max={max(batch_accuracies) * 100:.2f}%, mean={epoch_accuracy * 100:.2f}%")
 
-    print(f"Test Loss: {avg_loss:.4f}, Top-1 Accuracy: {accuracy_top1:.2f}%, Top-5 Accuracy: {accuracy_top5:.2f}%")
 
+            # 记录训练损失和准确率到 TensorBoard
+            writer.add_scalar("Train/Loss", epoch_loss, epoch)
+            writer.add_scalar("Train/Accuracy", epoch_accuracy * 100, epoch)
+
+            # Validation loop
+            model.eval()
+            val_correct = 0
+            val_total = 0
+            val_running_loss = 0.0
+            val_bar = tqdm(val_loader, desc="Validating", leave=False)
+            with torch.no_grad():
+                for val_inputs, val_labels in val_bar:
+                    val_inputs, val_labels = val_inputs.to(device), val_labels.to(device)
+                    val_outputs = model(val_inputs)
+                    val_loss = criterion(val_outputs, val_labels)
+
+                    _, val_predicted = val_outputs.max(1)
+                    val_correct += (val_predicted == val_labels).sum().item()
+                    val_total += val_labels.size(0)
+                    val_running_loss += val_loss.item()
+
+            val_loss = val_running_loss / len(val_loader)
+            val_accuracy = val_correct / val_total
+            print(f"Validation Loss: {val_loss:.4f}, Validation Accuracy: {val_accuracy * 100:.2f}%")
+
+            # 记录验证损失和准确率到 TensorBoard
+            writer.add_scalar("Validation/Loss", val_loss, epoch)
+            writer.add_scalar("Validation/Accuracy", val_accuracy * 100, epoch)
+
+            # Save the best model
+            if val_accuracy > best_accuracy:
+                best_accuracy = val_accuracy
+                timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+                save_path = os.path.join(save_dir,
+                                         f"{model_type}_{dataset_name}_batch{batch_size}_valAcc{val_accuracy * 100:.2f}_{timestamp}.pth")
+                last_save_path = save_best_model(model, save_path, last_save_path)
+
+            # Update learning rate
+            scheduler.step()
+
+        print(f"Training complete. Best model saved with validation accuracy: {best_accuracy * 100:.2f}%")
+    except Exception as e:
+        print(f"Error during training: {e}")
+        raise
+    finally:
+        writer.close()
 
 def main():
-    # 添加命令行参数解析
-    parser = argparse.ArgumentParser(description="Test a trained model on CIFAR-10")
-    parser.add_argument("--modir", type=str, required=True, help="Path to the saved model file")
-    parser.add_argument("--model", type=str, default="ResNet34",help="Model type: ResNet34, ResNet50, or ResNet101")
-    parser.add_argument("--data", type=str, default="Cifar10", help="Data type: Cifar10, or Cifar100")
+    parser = argparse.ArgumentParser(description="Train a ResNet model from scratch for classification")
+    parser.add_argument("--model_type", type=str, default="ResNet50", help="Model type (ResNet50, ResNet34, ResNet101, ResNet200)")
+    parser.add_argument("--batch_size", type=int, default=64, help="Batch size")
+    parser.add_argument("--epochs", type=int, default=10, help="Number of epochs")
+    parser.add_argument("--learning_rate", type=float, default=0.1, help="Learning rate")
+    parser.add_argument("--dataset_name", type=str, default="cifar10", help="Dataset name (cifar10, cifar100, imagenet)")
+    parser.add_argument("--dataset", type=str, default="./data", help="Path to dataset")
+    parser.add_argument("--save_dir", type=str, default="./saved_models/classification/scratch", help="Directory to save the best model")
+    parser.add_argument("--gpu", type=int, default=0, help="GPU id to use (default: 0)")
+
     args = parser.parse_args()
 
-    model_path = args.modir
-    model_type = args.model
-    data_type = args.data
+    device = torch.device(f"cuda:{args.gpu}" if torch.cuda.is_available() else "cpu")
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    # model_path = "./saved_models/classification/scratch/ResNet34_cifar10_batch256_valAcc85.96_20250103-012057.pth"
+    # 关闭tensorflow的oneDNN 优化，从而减少可能的冲突
+    os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
-    test_model(model_path, device,model_type,data_type)
+    # Dataset loading
+    if args.dataset_name == "cifar10":
+        transform = transforms.Compose([
+            # transforms.RandomResizedCrop(32),
+            # transforms.RandomHorizontalFlip(),
+            AutoAugment(AutoAugmentPolicy.CIFAR10),
+            transforms.ToTensor(),
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+        ])
+        dataset = datasets.CIFAR10(root=args.dataset, train=True, download=True, transform=transform)
+        num_classes = 10
+    elif args.dataset_name == "cifar100":
+        transform = transforms.Compose([
+            transforms.RandomResizedCrop(32),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+        ])
+        dataset = datasets.CIFAR100(root=args.dataset, train=True, download=True, transform=transform)
+        num_classes = 100
+    elif args.dataset_name == "imagenet":
+        transform = transforms.Compose([
+            transforms.Resize(256),
+            transforms.CenterCrop(224),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ])
+        dataset = datasets.ImageFolder(root=os.path.join(args.dataset, "train"), transform=transform)
+        num_classes = 1000
+    else:
+        raise ValueError(f"Unsupported dataset: {args.dataset_name}")
+
+    # Split dataset
+    torch.manual_seed(42)
+    train_size = int(0.8 * len(dataset))
+    val_size = len(dataset) - train_size
+    train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
+
+    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=4, pin_memory=True)
+    val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False, num_workers=4, pin_memory=True)
+
+    # Load model
+    model_dict = {
+        "ResNet34": lambda: ResNet34(num_classes=num_classes),
+        "ResNet50": lambda: ResNet50(num_classes=num_classes),
+        "ResNet101": lambda: ResNet101(num_classes=num_classes),
+        "ResNet200": lambda: ResNet200(num_classes=num_classes),
+    }
+    base_model_func = model_dict.get(args.model_type)
+    if base_model_func is None:
+        raise ValueError(f"Unsupported model type: {args.model_type}")
+
+    model = base_model_func().to(device)
+
+    # Optimizer and scheduler
+    # optimizer = optim.SGD(model.parameters(), lr=args.learning_rate, momentum=0.9, weight_decay=5e-4)
+    # scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
+    optimizer = optim.AdamW(
+        model.parameters(),
+        lr=args.learning_rate,  # 学习率，与 SGD 的默认值可能不同，建议适当减小
+        betas=(0.9, 0.999),  # 默认 AdamW 参数
+        eps=1e-8,  # 防止数值不稳定
+        weight_decay=5e-4  # 权重衰减
+    )
+
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(
+        optimizer,
+        T_max=args.epochs  # Cosine退火周期与总训练 epoch 对应
+    )
+
+
+
+    # Loss function
+    criterion = nn.CrossEntropyLoss()
+
+    # Train from scratch
+    print("Training started...")
+    train_from_scratch(train_loader, val_loader, model, optimizer, scheduler, criterion, device, dataset_name=args.dataset_name,
+                       epochs=args.epochs, save_dir=args.save_dir, model_type=args.model_type, batch_size=args.batch_size)
+
 
 if __name__ == "__main__":
     main()
 
-    # 指令示例
-    #python test_scratch_classifier_top1_5.py --model ResNet34 --data Cifar10 --modir ./saved_models/classification/scratch/ResNet34_cifar10_batch256_valAcc85.96_20250103-012057.pth
-
+# python train_scratch_classifier.py --model_type ResNet34 --batch_size 16 --epochs 20 --learning_rate 0.005 --dataset_name cifar10

@@ -61,7 +61,9 @@ Supervised-Contrastive-Learning/
 │   ├── __init__.py                 # Marks the directory as a Python package
 │   ├── ResNet34.py                 # Implementation of ResNet-34 backbone
 │   ├── ResNet50.py                 # Implementation of ResNet-50 backbone
-│   ├── SupConResNet.py             # Implementation of the projection head
+│   ├── ResNet101.py                 # Implementation of ResNet-101 backbone
+│   ├── ResNet200.py                 # Implementation of ResNet-200 backbone
+│   ├── Projectionhead.py             # Implementation of the projection head
 ├── saved_models/                   # Directory for saving pretrained models and weights
 │   ├── classification/             # Contains weights for classification tasks
 │   │   ├── pretrain/               # Pretrained classification models
@@ -79,20 +81,29 @@ Supervised-Contrastive-Learning/
 
 ### Pretraining with Supervised Contrastive Loss
 
-To pretrain the model using supervised contrastive loss, use the following command:
+To pretrain the model using supervised contrastive loss, use the following command, parameters can be modified as needed:
 
 ```bash
 python main_con.py --batch_size 32 --learning_rate 0.5 --epochs 700 --temp 0.1 --log_dir ./my_logs --model_save_dir ./saved_models/pretraining --gpu 0 --dataset ./data --dataset_name cifar10 --model_type ResNet34 --loss_type supout --input_resolution 32 --feature_dim 128 --num_workers 2
 ```
 ### Fine-tuning Pretrained Models
 
+To fine-tune the pretrained model for classification, run the following command, parameters can be modified as needed:
+```bash
+python train_pretrained_classifier.py --model_type ResNet34 --pretrained_model ./saved_models/pretraining/ResNet34/ResNet34_cifar10_feat128_supout_epoch241_batch32.pth --save_dir ./saved_models/classification/pretrained --batch_size 32 --epochs 3 --learning_rate 0.001 --dataset_name cifar10 --dataset ./data --gpu 0
+```
+### Training Classifiers from Scratch
+To train a classifier from scratch without pretraining, use the following command, parameters can be modified as needed:
+```bash
+python train_scratch_classifier.py --model_type ResNet34 --batch_size 32 --epochs 3 --learning_rate 0.1 --dataset_name cifar10 --dataset ./data --save_dir ./saved_models/classification/scratch --gpu 0
+```
+## Results
+之后补充
 
-
-
-
-
-
-
+## Contact
+For any inquiries, feel free to reach out:
+Zhuoxuan Cao
+Email: Zhuoxuan.Cao@etu.sorbonne-universite.fr
 ## 1 代码结构
 - Contrastive_Learning/：包含与对比学习相关的代码。
    - init.py：该文件是简单的初始化文件，将 Contrastive_Learning 文件夹标记为一个 Python 包。通过该文件，项目中其他模块可以导入 Contrastive_Learning 文件夹中的函数、类或配置。

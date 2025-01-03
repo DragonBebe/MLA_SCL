@@ -11,6 +11,9 @@ import os
 import datetime
 
 from torch.utils.tensorboard import SummaryWriter # 用于加载tensorboard
+import re
+import subprocess  # 用于调用外部脚本 可以每x个eporch调用一次test
+import time  # 引入 time 模块
 
 def ensure_dir_exists(path):
     if not os.path.exists(path):
@@ -32,7 +35,7 @@ def save_best_model(model, save_path, last_save_path):
 
 
 def train_from_scratch(train_loader, val_loader, model, optimizer, scheduler, criterion, device, dataset_name, epochs=10,
-                       save_dir="./saved_models", model_type="ResNet50", batch_size=64):
+                       save_dir="./saved_models", model_type="ResNet50", batch_size=64,test_script_path="test_scratch_classifier.py"):
     model.train()
     best_accuracy = 0.0
     last_save_path = None
@@ -45,6 +48,9 @@ def train_from_scratch(train_loader, val_loader, model, optimizer, scheduler, cr
     try:
         for epoch in range(epochs):
             print(f"Epoch [{epoch + 1}/{epochs}]")
+
+            # 记录 epoch 开始时间
+            start_time = time.time()
 
             # Training loop
             running_loss = 0.0
@@ -89,6 +95,11 @@ def train_from_scratch(train_loader, val_loader, model, optimizer, scheduler, cr
             writer.add_scalar("Train/Loss", epoch_loss, epoch)
             writer.add_scalar("Train/Accuracy", epoch_accuracy * 100, epoch)
 
+            # 记录 epoch 结束时间并计算耗时
+            end_time = time.time()
+            epoch_time = end_time - start_time
+            print(f"Epoch [{epoch + 1}/{epochs}] completed in {epoch_time:.2f} seconds.")
+
             # Validation loop
             model.eval()
             val_correct = 0
@@ -124,6 +135,31 @@ def train_from_scratch(train_loader, val_loader, model, optimizer, scheduler, cr
 
             # Update learning rate
             scheduler.step()
+            # 每 3 个 epoch 调用测试脚本
+            if (epoch + 1) % 1 == 0:
+                print("\nCalling test script...")
+                try:
+                    result = subprocess.run(
+                        ["python", test_script_path, "--modir", last_save_path, "--model", model_type],
+                        check=True, capture_output=True, text=True
+                    )
+                    # 从测试脚本输出中提取 Top-1 和 Top-5 准确率
+                    output = result.stdout
+                    top1_match = re.search(r"Top-1 Accuracy: (\d+\.\d+)%", output)
+                    top5_match = re.search(r"Top-5 Accuracy: (\d+\.\d+)%", output)
+
+                    if top1_match and top5_match:
+                        top1_accuracy = float(top1_match.group(1))
+                        top5_accuracy = float(top5_match.group(1))
+
+                        # 记录到 TensorBoard
+                        writer.add_scalar("Test/Top-1 Accuracy", top1_accuracy, epoch)
+                        writer.add_scalar("Test/Top-5 Accuracy", top5_accuracy, epoch)
+                        print(f"Test results added to TensorBoard: Top-1: {top1_accuracy}%, Top-5: {top5_accuracy}%")
+                    else:
+                        print("Failed to extract accuracies from test script output.")
+                except subprocess.CalledProcessError as e:
+                    print(f"Error occurred while running the test script: {e}")
 
         print(f"Training complete. Best model saved with validation accuracy: {best_accuracy * 100:.2f}%")
     except Exception as e:
@@ -235,4 +271,4 @@ def main():
 if __name__ == "__main__":
     main()
 
-# python train_scratch_classifier.py --model_type ResNet34 --batch_size 16 --epochs 20 --learning_rate 0.005 --dataset_name cifar10
+# python train_scratch_classifier.py --model_type ResNet34 --batch_size 32 --epochs 100 --learning_rate 0.005 --dataset_name cifar10

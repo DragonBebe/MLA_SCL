@@ -1,8 +1,0 @@
-1.梯度爆炸！！检查代码，看是model的问题还是loss的问题，源代码的losses.py的最后一次更新提到他fix了loss=nan的问题，重点看！！！！！
-2.verify model 三个model
-3.verify loss，先看supout
-4.test.py，或者集成到其他文件里
-
-
-5. 尝试！！！CIFAR 数据集的分辨率较低，初始卷积核大小为 7×7（步幅为 2），可能导致特征提取不足。在 CIFAR 数据集上训练时，可以将初始卷积核改为3×3 并调整步幅。
-6. MLP，天坑

@@ -132,8 +132,50 @@ By structuring the training process this way, the project ensures:
 3. Direct comparison between pretrained and non-pretrained approaches.
 ---
 ## Results
-之后补充
+### 1.
+We evaluated the performance of **Supervised Contrastive Learning (SupCon)** and **Cross-Entropy (CE)** loss functions on classification tasks using CIFAR-10 and CIFAR-100 datasets. Results include Top-1 and Top-5 accuracies for two ResNet variants:
 
+- **ResNet-34-org**: Original ResNet-34 architecture
+- **ResNet-34-new**: Optimized ResNet-34 architecture with improvements(SE Module,Gelu...)
+
+| Dataset   | Loss            | Architecture     | Test Top-1 | Test Top-5 |
+|-----------|-----------------|------------------|------------|------------|
+| CIFAR-10  | Cross-Entropy   | ResNet-34-org    | 85.34      | 96.98      |
+| CIFAR-10  | SupCon          | ResNet-34-org    | **90.30**  | **99.52**  |
+| CIFAR-10  | Cross-Entropy   | ResNet-34-new    | 89.94      | 99.61      |
+| CIFAR-10  | SupCon          | ResNet-34-new    | **91.70**  | **99.73**  |
+| CIFAR-100 | Cross-Entropy   | ResNet-50-org    | 81.68      | 97.86      |
+| CIFAR-100 | SupCon          | ResNet-50-org    | **91.22**  | **98.60**  |
+| CIFAR-100 | Cross-Entropy   | ResNet-34-new    | 63.71      | 87.58      |
+| CIFAR-100 | SupCon          | ResNet-34-new    | **65.88**  | **89.01**  |
+
+### Observations
+1. **SupCon consistently outperforms Cross-Entropy**, achieving higher Top-1 and Top-5 accuracy across all architectures and datasets.
+2. **Optimized ResNet-34 (ResNet-34-new)** shows improvements over the original ResNet-34 in both loss functions.
+### 2.
+We evaluated the impact of different data augmentation methods on the accuracy of **Supervised Contrastive Learning (SupCon)** and **Cross-Entropy (CE)** loss functions using the CIFAR-10 dataset. The study utilized the ResNet-34-new model with three data augmentation methods:
+
+- **MixUp**: Linearly combines two images and their labels.
+- **CutMix**: Replaces a portion of one image with a patch from another image, mixing labels accordingly.
+- **AutoAugment**: Applies a sequence of predefined augmentation operations to improve generalization.
+
+| Loss            | Augmentation  | Test Top-1 | Test Top-5 |
+|------------------|---------------|------------|------------|
+| Cross-Entropy   | MixUp         | 83.34      | 98.23      |
+| Cross-Entropy   | CutMix        | 90.30      | 99.49      |
+| Cross-Entropy   | AutoAugment   | 89.94      | 99.61      |
+| SupCon          | MixUp         | 85.68      | 98.73      |
+| SupCon          | CutMix        | **91.22**  | **99.42**  |
+| SupCon          | AutoAugment   | **91.70**  | **99.73**  |
+
+### Observations
+1. **Impact of Data Augmentation**: 
+   - **AutoAugment** provides the best results for both SupCon and Cross-Entropy, achieving Test Top-1 accuracies of **91.70** (SupCon) and **89.94** (Cross-Entropy).
+   - **CutMix** performs closely, with Test Top-1 accuracies of **91.22** (SupCon) and **90.30** (Cross-Entropy).
+   - **MixUp** shows the weakest performance, with Test Top-1 accuracies of **85.68** (SupCon) and **83.34** (Cross-Entropy).
+
+2. **Advantages of SupCon**: 
+   - **SupCon consistently outperforms Cross-Entropy** across all augmentation methods. For instance, with **AutoAugment**, SupCon achieves a Top-1 accuracy of **91.70**, surpassing Cross-Entropy's **89.94**.
 ---
 ## Contact
 

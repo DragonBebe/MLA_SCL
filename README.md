@@ -177,6 +177,22 @@ We evaluated the impact of different data augmentation methods on the accuracy o
 2. **Advantages of SupCon**: 
    - **SupCon consistently outperforms Cross-Entropy** across all augmentation methods. For instance, with **AutoAugment**, SupCon achieves a Top-1 accuracy of **91.70**, surpassing Cross-Entropy's **89.94**.
 ---
+## References
+
+1. Khosla, Prannay, et al. "Supervised Contrastive Learning." *arXiv preprint arXiv:2004.11362*, Version 5, revised March 10, 2021. [Link](https://arxiv.org/abs/2004.11362) [DOI: 10.48550/arXiv.2004.11362]
+
+2. Chen, Ting, et al. "A Simple Framework for Contrastive Learning of Visual Representations." *arXiv preprint arXiv:2002.05709*, Version 3, revised July 1, 2020. [Link](https://arxiv.org/abs/2002.05709) [DOI: 10.48550/arXiv.2002.05709]
+
+3. He, Kaiming, et al. "Deep Residual Learning for Image Recognition." In *Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR)*, 2016, pp. 770–778. [Link](https://openaccess.thecvf.com/content_cvpr_2016/html/He_Deep_Residual_Learning_CVPR_2016_paper.html) [DOI: 10.1109/CVPR.2016.90]
+
+4. Hu, Jie, et al. "Squeeze-and-Excitation Networks." In *Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR)*, 2018, pp. 7132–7141. [Link](https://openaccess.thecvf.com/content_cvpr_2018/html/Hu_Squeeze-and-Excitation_Networks_CVPR_2018_paper.html) [DOI: 10.1109/CVPR.2018.00745]
+
+5. Hendrycks, Dan, and Kevin Gimpel. "Gaussian Error Linear Units (GELUs)." *arXiv preprint arXiv:1606.08415* (2016). [Link](https://arxiv.org/abs/1606.08415)
+
+6. Zhang, Hongyi, et al. "mixup: Beyond Empirical Risk Minimization." *arXiv preprint arXiv:1710.09412*, Version 2, revised April 27, 2018. [Link](https://arxiv.org/abs/1710.09412) [DOI: 10.48550/arXiv.1710.09412]
+
+7. Yun, Sangdoo, et al. "CutMix: Regularization Strategy to Train Strong Classifiers with Localizable Features." *arXiv preprint arXiv:1905.04899*, Version 2, revised August 7, 2019. [Link](https://arxiv.org/abs/1905.04899) [DOI: 10.48550/arXiv.1905.04899]
+---
 ## Contact
 
 For any inquiries, feel free to reach out:

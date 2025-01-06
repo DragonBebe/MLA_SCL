@@ -177,6 +177,14 @@ We evaluated the impact of different data augmentation methods on the accuracy o
 2. **Advantages of SupCon**: 
    - **SupCon consistently outperforms Cross-Entropy** across all augmentation methods. For instance, with **AutoAugment**, SupCon achieves a Top-1 accuracy of **91.70**, surpassing Cross-Entropy's **89.94**.
 ---
+## Contact
+
+For any inquiries, feel free to reach out:
+
+**Zhuoxuan Cao**  
+Email: [caozhuoxuan@gmail.com](mailto:caozhuoxuan@gmail.com)
+
+---
 ## References
 
 1. Khosla, Prannay, et al. "Supervised Contrastive Learning." *arXiv preprint arXiv:2004.11362*, Version 5, revised March 10, 2021. [Link](https://arxiv.org/abs/2004.11362) [DOI: 10.48550/arXiv.2004.11362]
@@ -193,12 +201,7 @@ We evaluated the impact of different data augmentation methods on the accuracy o
 
 7. Yun, Sangdoo, et al. "CutMix: Regularization Strategy to Train Strong Classifiers with Localizable Features." *arXiv preprint arXiv:1905.04899*, Version 2, revised August 7, 2019. [Link](https://arxiv.org/abs/1905.04899) [DOI: 10.48550/arXiv.1905.04899]
 ---
-## Contact
 
-For any inquiries, feel free to reach out:
-
-**Zhuoxuan Cao**  
-Email: [caozhuoxuan@gmail.com](mailto:caozhuoxuan@gmail.com)
 
 
   

@@ -3,54 +3,54 @@ import os
 
 def parse_option():
     parser = argparse.ArgumentParser('Supervised Contrastive Learning with Config and CLI')
-    # 批量大小
+    # Batch size
     parser.add_argument('--batch_size', type=int, default=32, help='Batch size')
-    # 学习率
+    # Learning rate
     parser.add_argument('--learning_rate', type=float, default=0.001, help='Learning rate')
-    # 训练的epoch数
+    # Number of training epochs
     parser.add_argument('--epochs', type=int, default=15, help='Number of training epochs')
-    # 温度参数，用于对比损失中的温度缩放
+    # Temperature parameter, used for scaling in contrastive loss
     parser.add_argument('--temp', type=float, default=0.07, help='Temperature for contrastive loss')
-    # # 检查点保存频率，每隔多少个epoch保存一次模型
+    # # Checkpoint save frequency, save the model every certain number of epochs
     # parser.add_argument('--save_freq', type=int, default=5, help='Save frequency for checkpoints')
 
-    # 日志保存目录，用于保存训练过程的日志（每个 epoch 的损失、准确率等）
+    # Log directory, used to save training logs (e.g., loss, accuracy per epoch)
     parser.add_argument('--log_dir', type=str, default='./logs', help='Directory to save training logs')
-    # # 模型保存目录，用于保存训练的模型检查点
+    # # Model save directory, used to save trained model checkpoints
     parser.add_argument('--model_save_dir', type=str, default='./checkpoints',
                         help='Directory to save model checkpoints')
 
-    # GPU ID，指定使用的GPU设备ID；如果为None则使用CPU
+    # GPU ID, specifies the GPU device ID to use; if None, CPU will be used
     parser.add_argument('--gpu', type=int, default=0, help='GPU id to use')
-    # 数据集路径，指定数据集的存储路径
+    # Dataset path, specifies the storage path of the dataset
     parser.add_argument('--dataset', type=str, default='./data', help='Dataset to use')
-    # 损失函数类型，选择使用的损失函数
+    # Type of loss function, selects the loss function to use
     parser.add_argument('--loss_type', type=str, default='cross_entropy',
                         help='Loss type (e.g., cross_entropy, supcon, supin)')
-    # 数据集名称，用于指定选择的数据集（cifar10、cifar100、imagenet等）
+    # Dataset name, specifies the dataset to use (e.g., cifar10, cifar100, imagenet)
     parser.add_argument('--dataset_name', type=str, default='cifar10',
                         help='Dataset name (e.g., cifar10, cifar100, imagenet)')
-    # 模型类型，指定要使用的模型结构（resnet34、ResNeXt101、WideResNet等）
+    # Model type, specifies the model architecture to use (e.g., resnet34, ResNeXt101, WideResNet)
     parser.add_argument('--model_type', type=str, default='resnet34',
                         help='Model type (e.g., resnet34, ResNeXt101, WideResNet)')
-    # # 数据增强方法，选择数据增强模式
+    # # Data augmentation method, selects the data augmentation mode
     # parser.add_argument('--augmentation', type=str, default='basic',
     #                     help='Data augmentation method (e.g., basic, advanced)')
-    # 输入分辨率
+    # Input resolution
     parser.add_argument('--input_resolution', type=int, default=32, help='Input image resolution')
-    # 投影头特征尺寸
+    # Feature dimension for the projection head
     parser.add_argument('--feature_dim', type=int, default=128, help='Feature dimension for the projection head')
 
     parser.add_argument("--num_workers", type=int, default=2, help="Number of workers for data loading (default: 2)")
 
-    # class_name参数通常用于指定数据集中具体的类标签，尤其是在多分类任务中需要对特定类别进行操作时会用到。
+    # The class_name parameter is typically used to specify a specific class label in the dataset, especially when performing operations on a specific category in multi-class tasks.
     # parser.add_argument('--class_name', type=str, default='default_class', help='Class name for dataset')
-    # action_type参数可以用来指定代码的执行模式（如train、test、inference等），这样可以在一个脚本中实现不同的功能
+    # The action_type parameter can specify the execution mode of the code (e.g., train, test, inference), allowing for different functionalities within one script.
     # parser.add_argument('--action_type', type=str, default='norm-train', help='Action type (e.g., norm-train)')
 
     args = parser.parse_args()
 
-    # 动态设置分类数量
+    # Dynamically set the number of classes
     if args.dataset_name == 'cifar10':
         args.num_classes = 10
     elif args.dataset_name == 'cifar100':
@@ -58,7 +58,7 @@ def parse_option():
     else:
         raise ValueError(f"Unsupported dataset: {args.dataset_name}")
 
-    # 直接将 argparse 的解析结果转换为字典形式
+    # Directly convert the argparse results into a dictionary
     opt = vars(args)
 
     return opt

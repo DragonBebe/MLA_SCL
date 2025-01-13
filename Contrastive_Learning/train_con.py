@@ -20,13 +20,13 @@ class LARS(Optimizer):
     def __init__(self, params, lr, momentum=0.9, weight_decay=0.0, eta=0.001, epsilon=1e-8, min_lr=1e-6):
         """
         Args:
-            params: 模型参数。
-            lr: 基础学习率。
-            momentum: 动量。
-            weight_decay: 权重衰减。
-            eta: 缩放系数，用于控制 adaptive_lr。
-            epsilon: 用于数值稳定性的小常数，防止除零。
-            min_lr: adaptive_lr 的最小值，避免浮点数精度问题。
+            params: Model parameters.
+            lr: Base learning rate.
+            momentum: Momentum.
+            weight_decay: Weight decay.
+            eta: Scaling factor for controlling adaptive_lr.
+            epsilon: A small constant for numerical stability to avoid division by zero.
+            min_lr: Minimum value for adaptive_lr to avoid floating-point precision issues.
         """
         defaults = dict(lr=lr, momentum=momentum, weight_decay=weight_decay, eta=eta, epsilon=epsilon, min_lr=min_lr)
         super(LARS, self).__init__(params, defaults)
@@ -43,61 +43,61 @@ class LARS(Optimizer):
                     continue
                 grad = p.grad
 
-                # 添加权重衰减到梯度
+                # Add weight decay to the gradient
                 if group['weight_decay'] != 0:
                     grad = grad.add(p, alpha=group['weight_decay'])
 
-                # 计算参数和梯度的范数
+                # Compute norms of parameters and gradients
                 param_norm = torch.norm(p)
                 grad_norm = torch.norm(grad)
 
-                # 避免参数和梯度全为零导致的除零错误
+                # Avoid division by zero if both parameter and gradient norms are zero
                 if param_norm == 0 or grad_norm == 0:
                     # print(f"Warning: Zero norm detected in param or grad during LARS update.")
                     continue
 
-                # 计算 adaptive_lr
+                # Compute adaptive_lr
                 adaptive_lr = group['eta'] * param_norm / (grad_norm + group['epsilon'])
 
-                # 应用最小学习率下限
+                # Apply minimum learning rate limit
                 adaptive_lr = max(adaptive_lr, group['min_lr'])
 
-                # 更新参数
+                # Update parameters
                 p.add_(grad, alpha=-group['lr'] * adaptive_lr)
 
         return loss
 
-# 动态标准化参数和数据增强
+# Dynamically normalize parameters and data augmentation
 def set_loader(opt):
     """
-    根据配置动态加载数据集并应用数据增强和标准化。
+    Dynamically load dataset and apply data augmentation and normalization based on configuration.
     Args:
-        opt (dict): 包含数据集名称、路径、输入分辨率等的配置字典。
+        opt (dict): Configuration dictionary containing dataset name, path, input resolution, etc.
     Returns:
-        DataLoader: 训练数据加载器。
+        DataLoader: Training data loader.
     """
-    # 根据数据集名称动态设置数据增强和标准化
+    # Dynamically set data augmentation and normalization based on dataset name
     transform = TwoCropTransform(get_base_transform(opt['dataset_name'], opt['input_resolution']))
 
-    # 数据集映射
+    # Dataset mapping
     dataset_dict = {
         'cifar10': datasets.CIFAR10,
         'cifar100': datasets.CIFAR100,
         'imagenet': datasets.ImageFolder
     }
 
-    # 获取对应数据集类
+    # Get corresponding dataset class
     dataset_class = dataset_dict.get(opt['dataset_name'])
     if dataset_class is None:
         raise ValueError(f"Unknown dataset: {opt['dataset_name']}")
 
-    # 加载数据集
+    # Load dataset
     if opt['dataset_name'] in ['cifar10', 'cifar100']:
         train_dataset = dataset_class(root=opt['dataset'], train=True, download=True, transform=transform)
     elif opt['dataset_name'] == 'imagenet':
         train_dataset = dataset_class(root=opt['dataset'], transform=transform)
 
-    # 创建数据加载器
+    # Create data loader
     train_loader = DataLoader(
         train_dataset,
         batch_size=opt['batch_size'],
@@ -148,37 +148,37 @@ def set_model(opt):
 
 def create_scheduler(optimizer, warmup_epochs, total_epochs):
     """
-    创建 Warmup + 余弦退火学习率调度器
+    Create Warmup + Cosine Annealing Learning Rate Scheduler
 
-    调度器包含两个阶段：
-    1. **Warmup 阶段**：
-        - 在前 `warmup_epochs` 个 epoch 内，学习率从 0 增加到设定的初始学习率。
-        - 学习率按线性增长，公式为：`lr = base_lr * (epoch + 1) / warmup_epochs`。
+    The scheduler consists of two phases:
+    1. **Warmup Phase**:
+        - During the first `warmup_epochs`, the learning rate increases linearly from 0 to the initial learning rate.
+        - Learning rate formula: `lr = base_lr * (epoch + 1) / warmup_epochs`.
 
-    2. **余弦退火阶段**：
-        - 从 `warmup_epochs` 到 `total_epochs`，学习率按照余弦退火公式逐渐减少。
-        - 公式为：`lr = base_lr * 0.5 * (1 + cos(pi * (epoch - warmup_epochs) / (total_epochs - warmup_epochs)))`。
+    2. **Cosine Annealing Phase**:
+        - From `warmup_epochs` to `total_epochs`, the learning rate gradually decreases according to the cosine annealing formula.
+        - Formula: `lr = base_lr * 0.5 * (1 + cos(pi * (epoch - warmup_epochs) / (total_epochs - warmup_epochs)))`.
 
-    参数说明：
-    - `warmup_epochs`: 学习率线性增长的阶段，用于避免学习率过快调整导致的不稳定训练。
-    - `total_epochs`: 总训练 epoch 数，影响余弦退火阶段的结束位置。
+    Parameter Descriptions:
+    - `warmup_epochs`: Number of epochs for linear increase of learning rate to prevent unstable training.
+    - `total_epochs`: Total number of training epochs, affects the ending position of cosine annealing phase.
 
-    示例：
-    - 假设 `warmup_epochs=5`, `total_epochs=100`:
-      - 第 0-4 个 epoch：学习率线性从 0 增加到初始值。
-      - 第 5-99 个 epoch：学习率按照余弦函数逐渐减小。
+    Example:
+    - Assuming `warmup_epochs=5`, `total_epochs=100`:
+      - Epochs 0-4: Learning rate increases linearly to the initial value.
+      - Epochs 5-99: Learning rate decreases gradually based on the cosine function.
 
-    注意：
-    - 如果 `warmup_epochs` 设置过大，可能会延缓训练的收敛。
-    - `total_epochs` 的调整会影响余弦退火阶段的曲线形状，应与训练目标和任务规模匹配。
+    Notes:
+    - If `warmup_epochs` is set too high, it may delay training convergence.
+    - Adjusting `total_epochs` affects the curve shape of the cosine annealing phase and should match the training objective and task scale.
 
     Args:
-        optimizer (Optimizer): 优化器对象。
-        warmup_epochs (int): Warmup 阶段的 epoch 数。
-        total_epochs (int): 总训练的 epoch 数。
+        optimizer (Optimizer): Optimizer object.
+        warmup_epochs (int): Number of epochs for the warmup phase.
+        total_epochs (int): Total number of training epochs.
 
     Returns:
-        LambdaLR: 自定义的学习率调度器。
+        LambdaLR: Custom learning rate scheduler.
     """
     def lr_lambda(epoch):
         if epoch < warmup_epochs:
@@ -188,86 +188,83 @@ def create_scheduler(optimizer, warmup_epochs, total_epochs):
     return LambdaLR(optimizer, lr_lambda)
 
 
-
-
 def save_best_model(model, opt, epoch, loss, save_root, best_loss, last_save_path):
     """
-    保存性能最佳的模型，并删除旧的最佳模型。
+    Save the best performing model and delete the old best model.
     """
     if loss < best_loss:
         model_dir = os.path.join(save_root, opt['model_type'])
         os.makedirs(model_dir, exist_ok=True)
 
-        # 生成新模型的保存路径
+        # Generate save path for the new model
         timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
         save_path = os.path.join(
             model_dir,
             f"{opt['model_type']}_{opt['dataset_name']}_feat{opt['feature_dim']}_batch{opt['batch_size']}_epoch{epoch}_loss{loss:.4f}_{timestamp}.pth"
         )
 
-        # 保存新模型
+        # Save the new model
         torch.save({
             "model_state_dict": model.state_dict(),
             "config": opt
         }, save_path)
         print(f"New best model saved to {save_path}")
 
-        # 删除旧模型（如果存在）
+        # Delete the old model (if it exists)
         if last_save_path and os.path.exists(last_save_path):
             os.remove(last_save_path)
             print(f"Deleted previous best model: {last_save_path}")
 
-        return loss, save_path  # 更新最佳损失和保存路径
+        return loss, save_path  # Update best loss and save path
     else:
         return best_loss, last_save_path
 
 
 def train(train_loader, model, criterion, optimizer, opt, device, epoch=None):
     """
-    对比学习预训练的训练函数。
-    支持保存性能最佳的模型，并删除之前性能较差的模型。
+    Training function for contrastive learning pretraining.
+    Supports saving the best performing model and deleting previous inferior models.
     """
-    model.train()  # 设置模型为训练模式
-    running_loss = 0.0  # 累积损失初始化
-    total_steps = len(train_loader)  # 总步数
-    best_loss = opt.get("best_loss", float('inf'))  # 初始化最佳损失
-    last_save_path = opt.get("last_save_path", None)  # 初始化保存路径
+    model.train()  # Set model to training mode
+    running_loss = 0.0  # Initialize cumulative loss
+    total_steps = len(train_loader)  # Total steps
+    best_loss = opt.get("best_loss", float('inf'))  # Initialize best loss
+    last_save_path = opt.get("last_save_path", None)  # Initialize save path
 
     train_bar = tqdm(enumerate(train_loader), total=total_steps, desc="Training", leave=False)
     for step, (inputs, labels) in train_bar:
-        # 数据预处理：拼接两种图像增强结果
+        # Data preprocessing: concatenate two image augmentation results
         if isinstance(inputs, list) and len(inputs) == 2:
             inputs = torch.cat([inputs[0], inputs[1]], dim=0).to(device)
         else:
             inputs = inputs.to(device)
         labels = labels.to(device)
 
-        optimizer.zero_grad()  # 梯度清零
-        features = model(inputs)  # 前向传播
+        optimizer.zero_grad()  # Clear gradients
+        features = model(inputs)  # Forward propagation
 
-        # 分割对比特征并重新组合
+        # Split contrastive features and recombine
         f1, f2 = torch.split(features, features.size(0) // 2, dim=0)
         contrastive_features = torch.stack([f1, f2], dim=1)
 
-        # 对齐标签和特征的尺寸
+        # Align labels and features size
         if contrastive_features.size(0) != labels.size(0):
             labels = labels[:contrastive_features.size(0)]
 
-        # 计算损失
+        # Compute loss
         loss = criterion(contrastive_features, labels)
-        loss.backward()  # 反向传播
-        optimizer.step()  # 参数更新
+        loss.backward()  # Backward propagation
+        optimizer.step()  # Parameter update
 
-        running_loss += loss.item()  # 累积损失
-        train_bar.set_postfix(loss=loss.item())  # 更新进度条显示
+        running_loss += loss.item()  # Accumulate loss
+        train_bar.set_postfix(loss=loss.item())  # Update progress bar display
 
-    epoch_loss = running_loss / len(train_loader)  # 计算平均损失
+    epoch_loss = running_loss / len(train_loader)  # Compute average loss
     print(f"--- Summary for Epoch [{epoch + 1}] ---")
     print(f"    Average Loss: {epoch_loss:.4f}")
 
-    # 更新 opt 中的状态
+    # Update state in opt
     opt["best_loss"] = best_loss
     opt["last_save_path"] = last_save_path
 
     return epoch_loss
-

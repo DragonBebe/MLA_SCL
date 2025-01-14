@@ -1,7 +1,7 @@
 import argparse
 import torch
 import torch.nn as nn
-from tqdm import tqdm  # 用于显示进度条
+from tqdm import tqdm  # For displaying progress bars
 import torch.optim as optim
 from torch.utils.data import DataLoader, random_split
 from torchvision import datasets, transforms
@@ -10,10 +10,10 @@ from models import ResNet34, ResNet50, ResNet101, ResNet200
 import os
 import datetime
 
-from torch.utils.tensorboard import SummaryWriter # 用于加载tensorboard
+from torch.utils.tensorboard import SummaryWriter # For TensorBoard logging
 import re
-import subprocess  # 用于调用外部脚本 可以每x个eporch调用一次test
-import time  # 引入 time 模块
+import subprocess  # For calling external scripts, can be used to run tests every x epochs
+import time  # Import time module
 import numpy as np
 from data_augmentation import cutmix_data, cutmix_criterion, mixup_data, mixup_criterion
 
@@ -37,13 +37,13 @@ def save_best_model(model, save_path, last_save_path):
 
 
 def train_from_scratch(train_loader, val_loader, model, optimizer, scheduler, criterion, device, dataset_name, epochs=10,
-                       save_dir="./saved_models", model_type="ResNet50", batch_size=64,test_script_path="test_scratch_classifier.py"):
+                       save_dir="./saved_models", model_type="ResNet50", batch_size=64, test_script_path="test_scratch_classifier.py"):
     model.train()
     best_accuracy = 0.0
     last_save_path = None
     ensure_dir_exists(save_dir)
 
-    # 初始化 TensorBoard
+    # Initialize TensorBoard
     log_dir = os.path.join(save_dir, "tensorboard_logs")
     writer = SummaryWriter(log_dir=log_dir)
 
@@ -51,31 +51,31 @@ def train_from_scratch(train_loader, val_loader, model, optimizer, scheduler, cr
         for epoch in range(epochs):
             print(f"Epoch [{epoch + 1}/{epochs}]")
 
-            # 记录 epoch 开始时间
+            # Record the start time of the epoch
             start_time = time.time()
 
             # Training loop
             running_loss = 0.0
             correct = 0
             total = 0
-            batch_losses = []  # 保存每个 batch 的损失
-            batch_accuracies = []  # 保存每个 batch 的准确率
+            batch_losses = []  # Save the loss for each batch
+            batch_accuracies = []  # Save the accuracy for each batch
 
             model.train()
             train_bar = tqdm(train_loader, desc="Training", leave=False)
             for inputs, labels in train_bar:
                 inputs, labels = inputs.to(device), labels.to(device)
 
-                # 随机选择是否应用 MixUp 或 CutMix
-                if np.random.rand() < 0.0:  # 50% 概率应用 CutMix
+                # Randomly decide whether to apply MixUp or CutMix
+                if np.random.rand() < 0.0:  # 50% probability of applying CutMix
                     inputs, labels_a, labels_b, lam = cutmix_data(inputs, labels, alpha=1.0)
                     outputs = model(inputs)
                     loss = cutmix_criterion(criterion, outputs, labels_a, labels_b, lam)
-                elif np.random.rand() < 0.0:  # 50% 概率应用 MixUp
+                elif np.random.rand() < 0.0:  # 50% probability of applying MixUp
                     inputs, labels_a, labels_b, lam = mixup_data(inputs, labels, alpha=0.2)
                     outputs = model(inputs)
                     loss = mixup_criterion(criterion, outputs, labels_a, labels_b, lam)
-                else:  # 不应用增强方法
+                else:  # No augmentation applied
                     outputs = model(inputs)
                     loss = criterion(outputs, labels)
 
@@ -91,11 +91,11 @@ def train_from_scratch(train_loader, val_loader, model, optimizer, scheduler, cr
                 total += labels.size(0)
                 running_loss += loss.item()
 
-                # 记录 batch 的损失和准确率
+                # Record the loss and accuracy for the batch
                 batch_losses.append(loss.item())
                 batch_accuracies.append((predicted == labels).float().mean().item())
 
-                # 更新进度条
+                # Update progress bar
                 train_bar.set_postfix(loss=loss.item(), acc=batch_accuracies[-1] * 100)
 
             epoch_loss = running_loss / len(train_loader)
@@ -106,11 +106,11 @@ def train_from_scratch(train_loader, val_loader, model, optimizer, scheduler, cr
                 f"  Batch Accuracy: min={min(batch_accuracies) * 100:.2f}%, max={max(batch_accuracies) * 100:.2f}%, mean={epoch_accuracy * 100:.2f}%")
 
 
-            # 记录训练损失和准确率到 TensorBoard
+            # Record training loss and accuracy to TensorBoard
             writer.add_scalar("Train/Loss", epoch_loss, epoch)
             writer.add_scalar("Train/Accuracy", epoch_accuracy * 100, epoch)
 
-            # 记录 epoch 结束时间并计算耗时
+            # Record the end time of the epoch and calculate duration
             end_time = time.time()
             epoch_time = end_time - start_time
             print(f"Epoch [{epoch + 1}/{epochs}] completed in {epoch_time:.2f} seconds.")
@@ -136,7 +136,7 @@ def train_from_scratch(train_loader, val_loader, model, optimizer, scheduler, cr
             val_accuracy = val_correct / val_total
             print(f"Validation Loss: {val_loss:.4f}, Validation Accuracy: {val_accuracy * 100:.2f}%")
 
-            # 记录验证损失和准确率到 TensorBoard
+            # Record validation loss and accuracy to TensorBoard
             writer.add_scalar("Validation/Loss", val_loss, epoch)
             writer.add_scalar("Validation/Accuracy", val_accuracy * 100, epoch)
 
@@ -150,7 +150,7 @@ def train_from_scratch(train_loader, val_loader, model, optimizer, scheduler, cr
 
             # Update learning rate
             scheduler.step()
-            # 每 3 个 epoch 调用测试脚本
+            # Run test script every 3 epochs
             if (epoch + 1) % 1 == 0:
                 print("\nCalling test script...")
                 try:
@@ -158,7 +158,7 @@ def train_from_scratch(train_loader, val_loader, model, optimizer, scheduler, cr
                         ["python", test_script_path, "--modir", last_save_path, "--model", model_type],
                         check=True, capture_output=True, text=True
                     )
-                    # 从测试脚本输出中提取 Top-1 和 Top-5 准确率
+                    # Extract Top-1 and Top-5 accuracy from test script output
                     output = result.stdout
                     top1_match = re.search(r"Top-1 Accuracy: (\d+\.\d+)%", output)
                     top5_match = re.search(r"Top-5 Accuracy: (\d+\.\d+)%", output)
@@ -167,7 +167,7 @@ def train_from_scratch(train_loader, val_loader, model, optimizer, scheduler, cr
                         top1_accuracy = float(top1_match.group(1))
                         top5_accuracy = float(top5_match.group(1))
 
-                        # 记录到 TensorBoard
+                        # Record to TensorBoard
                         writer.add_scalar("Test/Top-1 Accuracy", top1_accuracy, epoch)
                         writer.add_scalar("Test/Top-5 Accuracy", top5_accuracy, epoch)
                         print(f"Test results added to TensorBoard: Top-1: {top1_accuracy}%, Top-5: {top5_accuracy}%")
@@ -198,7 +198,7 @@ def main():
 
     device = torch.device(f"cuda:{args.gpu}" if torch.cuda.is_available() else "cpu")
 
-    # 关闭tensorflow的oneDNN 优化，从而减少可能的冲突
+    # Disable TensorFlow oneDNN optimizations to reduce potential conflicts
     os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
     # Dataset loading
@@ -261,15 +261,15 @@ def main():
     # scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
     optimizer = optim.AdamW(
         model.parameters(),
-        lr=args.learning_rate,  # 学习率，与 SGD 的默认值可能不同，建议适当减小
-        betas=(0.9, 0.999),  # 默认 AdamW 参数
-        eps=1e-8,  # 防止数值不稳定
-        weight_decay=5e-4  # 权重衰减
+        lr=args.learning_rate,  # Learning rate, might differ from SGD's default, consider reducing
+        betas=(0.9, 0.999),  # Default AdamW parameters
+        eps=1e-8,  # To prevent numerical instability
+        weight_decay=5e-4  # Weight decay
     )
 
     scheduler = optim.lr_scheduler.CosineAnnealingLR(
         optimizer,
-        T_max=args.epochs  # Cosine退火周期与总训练 epoch 对应
+        T_max=args.epochs  # Cosine annealing period corresponding to total training epochs
     )
 
 
@@ -285,6 +285,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 # python train_scratch_classifier.py --model_type ResNet34 --batch_size 32 --epochs 20 --learning_rate 0.005 --dataset_name cifar10
 

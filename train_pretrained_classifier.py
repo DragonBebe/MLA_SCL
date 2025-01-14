@@ -1,5 +1,3 @@
-# 问题：学习率调整逻辑，是否还能优化
-
 import argparse
 import torch
 import numpy as np
@@ -12,11 +10,11 @@ from torchvision.transforms import AutoAugment, AutoAugmentPolicy
 from models import ResNet34, ResNet50, ResNet101, ResNet200, SupConResNetFactory
 from data_augmentation import cutmix_data, cutmix_criterion, mixup_data, mixup_criterion
 import os
-from tqdm import tqdm  # 用于显示进度条
+from tqdm import tqdm  # For displaying progress bars
 import datetime
 
-from torch.utils.tensorboard import SummaryWriter # 用于加载tensorboard
-import subprocess  # 用于调用外部脚本 可以每x个eporch调用一次test
+from torch.utils.tensorboard import SummaryWriter # For TensorBoard logging
+import subprocess  # For calling external scripts, can be used to run tests every x epochs
 import re
 
 def ensure_dir_exists(path):
@@ -33,7 +31,7 @@ def save_best_model(backbone, classifier, save_path, last_save_path):
             os.remove(last_save_path)
             print(f"Deleted previous model: {last_save_path}")
 
-    # 保存 Backbone 和分类头的权重
+    # Save the weights of Backbone and classifier
     torch.save({
         "backbone_state_dict": backbone.state_dict(),
         "classifier_state_dict": classifier.state_dict(),
@@ -44,7 +42,7 @@ def save_best_model(backbone, classifier, save_path, last_save_path):
 
 def train_classifier(train_loader, val_loader, model, classifier, optimizer, scheduler, criterion, device, epochs=10,
                      save_dir="./saved_models", model_type="ResNet50", batch_size=64, use_pretrained=True,
-                     dataset_name="cifar10",test_script_path="test_pretrained_classifier_top1_5.py"):
+                     dataset_name="cifar10", test_script_path="test_pretrained_classifier_top1_5.py"):
     if use_pretrained:
         model.eval()
     else:
@@ -55,7 +53,7 @@ def train_classifier(train_loader, val_loader, model, classifier, optimizer, sch
     last_save_path = None
     ensure_dir_exists(save_dir)
 
-    # 初始化 TensorBoard
+    # Initialize TensorBoard
     log_dir = os.path.join(save_dir, "tensorboard_logs")
     writer = SummaryWriter(log_dir=log_dir)
 
@@ -74,12 +72,12 @@ def train_classifier(train_loader, val_loader, model, classifier, optimizer, sch
             for inputs, labels in train_bar:
                 inputs, labels = inputs.to(device), labels.to(device)
 
-                # 随机选择 CutMix 或 Mixup
-                if np.random.rand() < 0.00:  # 50% 概率使用 CutMix # 0.2
+                # Randomly select CutMix or Mixup
+                if np.random.rand() < 0.00:  # 50% probability of using CutMix
                     inputs, labels_a, labels_b, lam = cutmix_data(inputs, labels, alpha=1.0)
                     outputs = classifier(model.encoder(inputs))
                     loss = cutmix_criterion(criterion, outputs, labels_a, labels_b, lam)
-                elif np.random.rand() < 0.0: # 0.4
+                elif np.random.rand() < 0.0:  # 50% probability of using MixUp
                     inputs, labels_a, labels_b, lam = mixup_data(inputs, labels, alpha=0.2)
                     outputs = classifier(model.encoder(inputs))
                     loss = mixup_criterion(criterion, outputs, labels_a, labels_b, lam)
@@ -108,7 +106,7 @@ def train_classifier(train_loader, val_loader, model, classifier, optimizer, sch
                 f"  Batch Accuracy: min={min(batch_accuracies) * 100:.2f}%, max={max(batch_accuracies) * 100:.2f}%, mean={epoch_accuracy * 100:.2f}%")
 
 
-            # 记录训练损失和准确率到 TensorBoard
+            # Log training loss and accuracy to TensorBoard
             writer.add_scalar("Train/Loss", epoch_loss, epoch)
             writer.add_scalar("Train/Accuracy", epoch_accuracy * 100, epoch)
 
@@ -134,12 +132,11 @@ def train_classifier(train_loader, val_loader, model, classifier, optimizer, sch
             print(f"Validation Loss: {val_loss:.4f}, Validation Accuracy: {val_accuracy * 100:.2f}%")
 
 
-            # 记录验证损失和准确率到 TensorBoard
+            # Log validation loss and accuracy to TensorBoard
             writer.add_scalar("Validation/Loss", val_loss, epoch)
             writer.add_scalar("Validation/Accuracy", val_accuracy * 100, epoch)
 
-            # 这里用于保存当前的test
-
+            # Save the best model
             if val_accuracy > best_accuracy:
                 best_accuracy = val_accuracy
                 timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -148,18 +145,8 @@ def train_classifier(train_loader, val_loader, model, classifier, optimizer, sch
                 last_save_path = save_best_model(model, classifier, save_path, last_save_path)
 
             scheduler.step()
-            """
-            # 每 3 个 epoch 调用测试脚本
-            if (epoch + 1) % 2 == 0:
-                print("\nCalling test script...")
-                try:
-                    subprocess.run(["python", test_script_path, "--modir", last_save_path, "--model", model_type],
-                                   check=True)
-                except subprocess.CalledProcessError as e:
-                    print(f"Error occurred while running the test script: {e}")
-            """
 
-            # 每 3 个 epoch 调用测试脚本
+            # Run test script every 3 epochs
             if (epoch + 1) % 1 == 0:
                 print("\nCalling test script...")
                 try:
@@ -167,7 +154,7 @@ def train_classifier(train_loader, val_loader, model, classifier, optimizer, sch
                         ["python", test_script_path, "--modir", last_save_path, "--model", model_type],
                         check=True, capture_output=True, text=True
                     )
-                    # 从测试脚本输出中提取 Top-1 和 Top-5 准确率
+                    # Extract Top-1 and Top-5 accuracy from test script output
                     output = result.stdout
                     top1_match = re.search(r"Top-1 Accuracy: (\d+\.\d+)%", output)
                     top5_match = re.search(r"Top-5 Accuracy: (\d+\.\d+)%", output)
@@ -176,7 +163,7 @@ def train_classifier(train_loader, val_loader, model, classifier, optimizer, sch
                         top1_accuracy = float(top1_match.group(1))
                         top5_accuracy = float(top5_match.group(1))
 
-                        # 记录到 TensorBoard
+                        # Log to TensorBoard
                         writer.add_scalar("Test/Top-1 Accuracy", top1_accuracy, epoch)
                         writer.add_scalar("Test/Top-5 Accuracy", top5_accuracy, epoch)
                         print(f"Test results added to TensorBoard: Top-1: {top1_accuracy}%, Top-5: {top5_accuracy}%")
@@ -222,21 +209,13 @@ def main():
     if args.dataset_name == "cifar10":
 
         transform = transforms.Compose([
-            # transforms.RandomResizedCrop(32),
-            # transforms.RandomHorizontalFlip(),
-
-            ###########################################################################
             AutoAugment(AutoAugmentPolicy.CIFAR10),
             transforms.RandomResizedCrop(32),
             transforms.RandomHorizontalFlip(),
             transforms.RandomApply([transforms.ColorJitter(0.4, 0.4, 0.4, 0.1)], p=0.6),
-            transforms.RandomGrayscale(p=0.1),  # 随机灰度
-            transforms.RandomRotation(10),  # 随机旋转
-            ###########################################################################
-
-            # transforms.RandomApply([transforms.GaussianBlur(kernel_size=3)], p=0.05),  # 随机高斯模糊
+            transforms.RandomGrayscale(p=0.1),  # Random grayscale
+            transforms.RandomRotation(10),  # Random rotation
             transforms.ToTensor(),
-            # transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
             transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2032, 0.1994, 0.2010)),
         ])
 
@@ -244,8 +223,6 @@ def main():
         num_classes = 10
     elif args.dataset_name == "cifar100":
         transform = transforms.Compose([
-            # transforms.RandomResizedCrop(32),
-            # transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
         ])
@@ -264,7 +241,7 @@ def main():
     else:
         raise ValueError(f"Unsupported dataset: {args.dataset_name}")
 
-    # 关闭tensorflow的oneDNN 优化，从而减少可能的冲突
+    # Disable TensorFlow oneDNN optimizations to reduce potential conflicts
     os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
     torch.manual_seed(42)
@@ -310,23 +287,6 @@ def main():
 
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
 
-    #     # 使用 AdamW 作为基础优化器
-    #     base_optimizer = optim.AdamW(
-    #         model.parameters(),
-    #         lr=args.learning_rate,  # 学习率，与 SGD 的默认值可能不同，建议适当减小
-    #         betas=(0.9, 0.999),  # 默认 AdamW 参数
-    #         eps=1e-8,  # 防止数值不稳定
-    #         weight_decay=1e-3  # 权重衰减
-    #     )
-
-    #     # 包装 Lookahead 优化器
-    #     optimizer = Lookahead(base_optimizer, k=5, alpha=0.5)
-
-    #     scheduler = optim.lr_scheduler.CosineAnnealingLR(
-    #         optimizer,
-    #         T_max=args.epochs  # Cosine退火周期与总训练 epoch 对应
-    #     )
-
     criterion = nn.CrossEntropyLoss()
 
     print("Training started...")
@@ -337,6 +297,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 # python train_pretrained_classifier.py --model_type ResNet34 --batch_size 128 --epochs 10 --learning_rate 0.005 --dataset_name cifar10  --pretrained_model ./saved_models/pretraining/ResNet34/ResNet34_cifar10_feat128_batch256_epoch696_loss4.7631_20241217-143332.pth
 

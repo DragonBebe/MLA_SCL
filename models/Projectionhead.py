@@ -85,28 +85,28 @@ def SupConResNetFactory(base_model_func, feature_dim=128):
     dim_in = determine_feature_dim(base_model)  # Dynamically determine feature dimension
     return SupConResNet(base_model, feature_dim, dim_in)
 
-def SupConResNetFactory_CSPDarknet53(base_model_func=None, feature_dim=128):
-    """
-    Factory function to create a SupConResNet model based on a custom backbone model.
+# def SupConResNetFactory_CSPDarknet53(base_model_func=None, feature_dim=128):
+#     """
+#     Factory function to create a SupConResNet model based on a custom backbone model.
     
-    Args:
-        base_model_func: Function to initialize the backbone model.
-        feature_dim (int): Output feature dimension of the projection head.
-    Returns:
-        SupConResNet instance.
-    """
-    if base_model_func is None:
-        raise ValueError("base_model_func must be provided.")
+#     Args:
+#         base_model_func: Function to initialize the backbone model.
+#         feature_dim (int): Output feature dimension of the projection head.
+#     Returns:
+#         SupConResNet instance.
+#     """
+#     if base_model_func is None:
+#         raise ValueError("base_model_func must be provided.")
 
-    # Initialize the backbone
-    base_model = base_model_func()
-    base_model.fc = nn.Identity()  # Remove classification head
-    base_model.avgpool = nn.Identity()  # Remove final pooling layer
+#     # Initialize the backbone
+#     base_model = base_model_func()
+#     base_model.fc = nn.Identity()  # Remove classification head
+#     base_model.avgpool = nn.Identity()  # Remove final pooling layer
 
-    # Dynamically determine the feature dimension
-    with torch.no_grad():
-        dummy_input = torch.randn(1, 3, 32, 32)  # Example input for CIFAR-like data
-        features = base_model(dummy_input)
-        feature_dim_in = features.shape[1]  # Feature dimension from the backbone
+#     # Dynamically determine the feature dimension
+#     with torch.no_grad():
+#         dummy_input = torch.randn(1, 3, 32, 32)  # Example input for CIFAR-like data
+#         features = base_model(dummy_input)
+#         feature_dim_in = features.shape[1]  # Feature dimension from the backbone
 
-    return SupConResNet(base_model, feature_dim=feature_dim, dim_in=feature_dim_in)
+#     return SupConResNet(base_model, feature_dim=feature_dim, dim_in=feature_dim_in)

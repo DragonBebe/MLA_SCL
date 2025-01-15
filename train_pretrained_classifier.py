@@ -298,10 +298,7 @@ def main():
 if __name__ == "__main__":
     main()
 
-
+# Examples of commands：
 # python train_pretrained_classifier.py --model_type ResNet34 --batch_size 128 --epochs 10 --learning_rate 0.005 --dataset_name cifar10  --pretrained_model ./saved_models/pretraining/ResNet34/ResNet34_cifar10_feat128_batch256_epoch696_loss4.7631_20241217-143332.pth
 
 
-# python train_pretrained_classifier.py --model_type ResNet34 --pretrained_model ./saved_models/pretraining/ResNet34/ResNet34_cifar10_feat128_supout_epoch241_batch32.pth --batch_size 32 --epochs 20 --learning_rate 0.001 --dataset_name cifar10
-
-# python main.py --no_pretrained --model_type ResNet34 --dataset_name cifar10 --batch_size 32 --epochs 20 --learning_rate 0.001 --save_dir ./saved_models/classification/non_pretrained

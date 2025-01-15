@@ -45,6 +45,6 @@ def mixup_criterion(criterion, pred, y_a, y_b, lam):
     Returns:
         loss (torch.Tensor): Computed loss.
     """
-    # 添加 batch size 校验
+    
     assert pred.size(0) == y_a.size(0) == y_b.size(0), "Batch size mismatch between predictions and labels."
     return lam * criterion(pred, y_a) + (1 - lam) * criterion(pred, y_b)

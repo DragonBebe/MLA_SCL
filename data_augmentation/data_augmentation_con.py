@@ -11,7 +11,7 @@ class TwoCropTransform:
         return [self.base_transform(x), self.base_transform(x)]
 
 
-# 定义标准化参数的映射
+# Define normalization parameters for different datasets
 DATASET_STATS = {
     'cifar10': {
         'mean': (0.4914, 0.4822, 0.4465),
@@ -30,19 +30,19 @@ DATASET_STATS = {
 
 # def get_base_transform(input_resolution=32):
 #     """
-#     定义基本的数据增强组合，支持动态输入分辨率。
+#     Define basic data augmentation pipeline, supporting dynamic input resolution.
 #     Args:
-#         input_resolution (int): 输入图像的分辨率（默认32）。
+#         input_resolution (int): Input image resolution (default 32).
 #     """
 #     return transforms.Compose([
-#         # transforms.RandomResizedCrop(input_resolution, scale=(0.2, 1.0)),  # 动态分辨率
+#         # transforms.RandomResizedCrop(input_resolution, scale=(0.2, 1.0)),  # Dynamic resolution
 #         transforms.RandomResizedCrop(size=opt.size, scale=(0.2, 1.)),
 #         transforms.RandomHorizontalFlip(),
 #         transforms.RandomApply([transforms.ColorJitter(0.4, 0.4, 0.4, 0.1)], p=0.6),
-#         # transforms.ColorJitter(0.4, 0.4, 0.4, 0.1),  # 颜色抖动
-#         transforms.RandomGrayscale(p=0.2),           # 随机灰度
-#         # transforms.RandomRotation(10),  # 随机旋转
-#         # transforms.RandomApply([transforms.GaussianBlur(kernel_size=3)], p=0.15),  # 随机高斯模糊
+#         # transforms.ColorJitter(0.4, 0.4, 0.4, 0.1),  # Color jittering
+#         transforms.RandomGrayscale(p=0.2),           # Random grayscale
+#         # transforms.RandomRotation(10),  # Random rotation
+#         # transforms.RandomApply([transforms.GaussianBlur(kernel_size=3)], p=0.15),  # Random Gaussian blur
 #         transforms.ToTensor(),
 #         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
 #     ])
@@ -50,21 +50,21 @@ DATASET_STATS = {
 
 def get_base_transform(dataset_name, input_resolution=32):
     """
-    根据数据集动态设置标准化参数和其他数据增强方法。
+    Dynamically set normalization parameters and other data augmentation methods based on the dataset.
     Args:
-        dataset_name (str): 数据集名称 (e.g., 'cifar10', 'cifar100', 'imagenet')。
-        input_resolution (int): 输入图像分辨率。
+        dataset_name (str): Dataset name (e.g., 'cifar10', 'cifar100', 'imagenet').
+        input_resolution (int): Input image resolution.
     """
-    stats = DATASET_STATS.get(dataset_name, DATASET_STATS['cifar10'])  # 默认使用 CIFAR-10 参数
+    stats = DATASET_STATS.get(dataset_name, DATASET_STATS['cifar10'])  # Default to CIFAR-10 parameters
     return transforms.Compose([
-        # transforms.RandomResizedCrop(input_resolution, scale=(0.2, 1.0)),  # 动态分辨率
+        # transforms.RandomResizedCrop(input_resolution, scale=(0.2, 1.0)),  # Dynamic resolution
         transforms.RandomResizedCrop(size=input_resolution, scale=(0.2, 1.)),
         transforms.RandomHorizontalFlip(),
         transforms.RandomApply([transforms.ColorJitter(0.4, 0.4, 0.4, 0.1)], p=0.6),
-        # transforms.ColorJitter(0.4, 0.4, 0.4, 0.1),  # 颜色抖动
-        transforms.RandomGrayscale(p=0.2),  # 随机灰度
-        # transforms.RandomRotation(10),  # 随机旋转
-        # transforms.RandomApply([transforms.GaussianBlur(kernel_size=3)], p=0.15),  # 随机高斯模糊
+        # transforms.ColorJitter(0.4, 0.4, 0.4, 0.1),  # Color jittering
+        transforms.RandomGrayscale(p=0.2),  # Random grayscale
+        # transforms.RandomRotation(10),  # Random rotation
+        # transforms.RandomApply([transforms.GaussianBlur(kernel_size=3)], p=0.15),  # Random Gaussian blur
         transforms.ToTensor(),
-        transforms.Normalize(mean=stats['mean'], std=stats['std'])  # 动态标准化参数
+        transforms.Normalize(mean=stats['mean'], std=stats['std'])  # Dynamic normalization parameters
     ])
